@@ -205,23 +205,17 @@ void wattsToPlant(float watts){
 
 
 
-void connectWiFi()
-{
-
+void connectWiFi(){
+    WiFi.disconnect(true);
     WiFi.mode(WIFI_STA);
     WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-
-    while (WiFi.status() != WL_CONNECTED)
-    {
-        for (char i=0; i <= 12; i++)
-        {
-            Serial.print(".");
-            vTaskDelay(pdMS_TO_TICKS(500));
-        }
-        Serial.println("");
+    while (WiFi.status() != WL_CONNECTED) {
+        Serial.print(".");
+        vTaskDelay(pdMS_TO_TICKS(250));
     }
-    Serial.print("Connected to WIFI through IP: ");
-    Serial.println(WiFi.localIP());
+    printf("\n");
+    printf("Connected to WIFI through IP: %s \n", WiFi.localIP().toString());
+
 }
 
 
@@ -583,7 +577,7 @@ float computeController(float ref, float y){
 
 
 static void controlPidTask(void *pvParameters) {
-    /* this function computes a two parameter PID control with Antiwindup
+    /* this function computes a two parameter PID control with Antiwinduph
      See Astrom
     */
     const TickType_t taskPeriod = (pdMS_TO_TICKS(1000*h));
