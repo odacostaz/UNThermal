@@ -23,10 +23,10 @@ TaskHandle_t h_publishStateTask;
 TaskHandle_t h_menuTask;
 
 // PID control default parameters
-float kp = 5.78785533850858;
-float ki = 0.352680494113446;
-float kd  = 0;
-float N = 10;
+float kp = 16.796;
+float ki = 2;
+float kd  = 16.441;
+float N = 27.38;
 float beta = 0.1;
 float h = SAMPLING_TIME; //sampling time
 const float br = 1/0.99;
