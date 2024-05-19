@@ -540,7 +540,7 @@ def set_controller(system, controller):
 if __name__ == "__main__":
     plant = SystemIoT()
     print(plant.transfer_function(80))
-    set_pid(plant, kp=16.796, ki=3.5, kd=16.441, N=27.38, beta=1)
+    set_pid(plant, kp=16.796, ki=2, kd=16.441, N=27.38, beta=1)
     t,  r, y, u = step_closed(plant, 50, 60, 50, 50)
     #signal = [30, 40, 50, 60, 70, 80]
     # set_pid(plant, kp = 16.796, ki = 5, kd = 16.441, N = 27.38, beta = 1)
