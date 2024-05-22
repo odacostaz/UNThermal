@@ -162,16 +162,6 @@ void sensorToColormap(float x, uint8_t * rgbval) {
     b = 0.1067 + x * (12.5925 - x * (60.1097 - x * (109.0745 - x * (88.5066 - x * 26.8183))));
 
 
-//    Plasma colormap. Uncomment these lines if you want to use the plasma colormap, which is perceptually uniform.
-//    r = 0.058732344 - 1.0*x*(x*(x*(x*(x*(3.6587138*x - 10.023066) + 11.107436) - 6.1303483) + 2.6894605) - 2.1765146);
-//    g = 0.023336709 - 1.0*x*(x*(x*(x*(x*(22.931535*x - 71.413618) + 82.666311) - 42.346188) + 7.4558511) - 0.23838342);
-//    b = x*(x*(x*(x*(x*(18.191908*x - 54.072187) + 60.139848) - 28.518855) + 3.1107999) + 0.75396046) + 0.54334018;
-//
-//    Inferno colormap. Uncomment these lines if you want to use the inferno colormap, which is perceptually uniform.
-//    r = x*(x*(x*(x*(x*(25.131126*x - 71.319428) + 77.162936) - 41.703996) + 11.602493) + 0.10651342) + 0.00021894037;
-//    g = 0.0016510046 - 1.0*x*(x*(x*(x*(x*(12.242669*x - 32.626064) + 33.402359) - 17.436399) + 3.972854) - 0.56395644);
-//    b = - 1.0*x*(x*(x*(x*(x*(23.070325*x - 73.20952) + 81.807309) - 44.354145) + 15.942394) - 3.9327124) - 0.019480898;
-
     r = constrain(r,0,1);
     g = constrain(g,0,1);
     b = constrain(b,0,1);
@@ -241,15 +231,46 @@ void connectMqtt()
 }
 
 
+// This function suspend all  controlling tasks
+void suspendAllTasks(){
+    vTaskSuspend(h_publishStateTask);
+    vTaskSuspend(h_generalControlTask);
+    vTaskSuspend(h_controlPidTask);
+    vTaskSuspend(h_identifyTask);
+    wattsToPlant(0);
+}
+
+
+void resumeControl(){
+    reset_int = true;
+    switch (typeControl) {
+        case PID_CONTROLLER:
+            vTaskResume(h_controlPidTask);
+            break;
+        case GENERAL_CONTROLLER:
+            vTaskResume(h_generalControlTask);
+            break;
+    }
+}
+
+// This function activate the default controller
+void defaultControl(){
+    codeTopic = DEFAULT_TOPIC;
+    reset_int = true;
+    vTaskSuspend(h_publishStateTask);
+    vTaskSuspend(h_identifyTask);
+    resumeControl();
+}
+
+
+
+
 void IRAM_ATTR onMqttReceived(char* lastTopic, byte* lastPayload, unsigned int lenght){
     JsonDocument doc;
-
+    suspendAllTasks();
     if (strstr(lastTopic, USER_SYS_SET_PID)){
         codeTopic = USER_SYS_SET_PID_INT;
         typeControl = PID_CONTROLLER;
-        vTaskSuspend(h_identifyTask);
-        vTaskSuspend(h_controlPidTask);
-        vTaskSuspend(h_generalControlTask);
         deserializeJson(doc, lastPayload);
         kp = hex2Float((const char *) doc["kp"]);
         ki = hex2Float((const char *) doc["ki"]);
@@ -257,17 +278,15 @@ void IRAM_ATTR onMqttReceived(char* lastTopic, byte* lastPayload, unsigned int l
         N = hex2Float((const char *) doc["N"]);
         beta = hex2Float((const char *) doc["beta"]);
         reset_int = true;
-        vTaskSuspend(h_identifyTask);
-        vTaskResume(h_controlPidTask);
         printf("PID parameters settled:\n\tkp=%0.3f\n\tki=%0.3f\n\tkd=%0.3f\n\tN=%0.3f\n\tBeta=%0.3f\n",
                kp, ki, kd, N, beta);
+        defaultControl();
     }
 
     else if (strstr(lastTopic, USER_SYS_SET_REF )){
         codeTopic = USER_SYS_SET_REF_INT;
         deserializeJson(doc, lastPayload);
         reference = hex2Float((const char *) doc["reference"]);
-        vTaskSuspend(h_identifyTask);
         if(typeControl == PID_CONTROLLER) {
             vTaskSuspend(h_generalControlTask);
             vTaskResume(h_controlPidTask);
@@ -280,9 +299,6 @@ void IRAM_ATTR onMqttReceived(char* lastTopic, byte* lastPayload, unsigned int l
     }
 
     else if (strstr(lastTopic, USER_SYS_STEP_CLOSED )){
-        vTaskSuspend(h_identifyTask);
-        vTaskSuspend(h_controlPidTask);
-        vTaskSuspend(h_generalControlTask);
         codeTopic = USER_SYS_STEP_CLOSED_INT;
         deserializeJson(doc, lastPayload);
         low_val = hex2Float((const char *) doc["low_val"]);
@@ -294,15 +310,7 @@ void IRAM_ATTR onMqttReceived(char* lastTopic, byte* lastPayload, unsigned int l
         printf("\tlow value=%0.2f\n\thigh value=%0.2f\n\ttime in high =%0.2f\n\ttime in low=%0.2f\n", low_val,
                high_val, (float) (points_high * h), (float) (points_low * h));
         vTaskResume(h_publishStateTask);
-        if(typeControl == PID_CONTROLLER) {
-            vTaskSuspend(h_generalControlTask);
-            vTaskResume(h_controlPidTask);
-        }
-        else if (typeControl == GENERAL_CONTROLLER) {
-            vTaskSuspend(h_controlPidTask);
-            vTaskResume(h_generalControlTask);
-        }
-
+        resumeControl();
     }
 
     else if (strstr(lastTopic, USER_SYS_STAIRS_CLOSED)){
@@ -331,9 +339,6 @@ void IRAM_ATTR onMqttReceived(char* lastTopic, byte* lastPayload, unsigned int l
 
     else if(strstr(lastTopic, USER_SYS_PRBS_OPEN )) {
         codeTopic = USER_SYS_PRBS_OPEN_INT;
-        vTaskSuspend(h_identifyTask);
-        vTaskSuspend(h_controlPidTask);
-        vTaskSuspend(h_generalControlTask);
         deserializeJson(doc, lastPayload);
         high_val = hex2Float((const char *) doc["peak_amp"]);
         reference = hex2Float((const char *) doc["op_point"]);
@@ -342,9 +347,11 @@ void IRAM_ATTR onMqttReceived(char* lastTopic, byte* lastPayload, unsigned int l
         divider = hex2Long((const char *) doc["divider"]);
         prbs_points = 63 * divider;
         total_time = prbs_points + stab_points + uee_points;
+        reset_int = true;
         np = 0;
         printf("Open loop test with a prbs signal with %d steps with a duration of %0.2f secs.\n",
                prbs_points, (total_time-1) * h);
+        vTaskResume(h_publishStateTask);
         vTaskResume(h_identifyTask);
     }
 
@@ -444,7 +451,7 @@ void publishStateOpen()
     JsonDocument doc;
     doc["np"] = long2Hex(np);
     doc["y"] = float2Hex(y);
-    doc["u"] = float2Hex(u);
+    doc["u"] = float2Hex(usat);
     char jsonBuffer[512];
     serializeJson(doc, jsonBuffer); // print to client
     mqttClient.publish(SYS_USER_SIGNALS_OPEN, jsonBuffer);
@@ -452,7 +459,7 @@ void publishStateOpen()
 
 
 float movingAverage(float newValue) {
-    const int filterSize = 30;
+    const int filterSize = 10;
     static float filter_values[filterSize] = {0.0};  // Array to store the last 'FILTER_SIZE' values
     static int index = 0;  // Current index in the array
     static float sum = 0.0;  // Sum of the current values in the array
@@ -487,7 +494,7 @@ void  computeReference() {
 
         case USER_SYS_STEP_CLOSED_INT:
 
-            if (np <= points_low) {
+            if (np < points_low) {
                 reference = low_val;
                 xTaskNotify(h_publishStateTask, 0b0001, eSetBits);
                 displayLed(y, 10, 90, 0.3, 0);
@@ -503,16 +510,11 @@ void  computeReference() {
                 displayLed(usat, 0, 100, 0.1, 2);
             }
             else if (np <= total_time + 1){
-                ledcWrite(PWM_CHANNEL, 0);
-                printf("Closed loop step response completed\n");
-                //typeControl = PID_CONTROLLER;
-                //codeTopic = DEFAULT_TOPIC;
-                ledcWrite(PWM_CHANNEL, 0 * percent2pwm);
-                dispLeds.clear();
-                dispLeds.show();
-                vTaskSuspend(h_controlPidTask);
-                vTaskSuspend(h_generalControlTask);
 
+                printf("Closed loop step response completed\n");
+                wattsToPlant(0);dispLeds.clear();
+                dispLeds.show();
+                defaultControl();
             }
             break;
 
@@ -584,42 +586,40 @@ static void controlPidTask(void *pvParameters) {
     float bi;
     float ad;
     float bd;
-    float P;          //  proportional action
-    float D = 0;          //  derivative action
-    static float y_ant = 0;      //  past output
-    static float I = 0;
-
+    float PA;              //  proportional action
+    float DA;          //  derivative action
+    float y_ant;       //  past output
+    float IA;
+    TickType_t xLastWakeTime;
     for (;;) {
+        xLastWakeTime = xTaskGetTickCount();
         if (reset_int) {
             np = 0;
-            I = 0;
+            IA = 0;
             reset_int = false;
-            sensors.requestTemperatures();
-            y_ant = sensors.getTempCByIndex(0);
             continue;
         }
-        TickType_t xLastWakeTime = xTaskGetTickCount();
+
         sensors.requestTemperatures();
         y = sensors.getTempCByIndex(0);
         computeReference();
 
         // This is a firmware protection in case of sensor failure or overtemperature.
         if (y <= 0 || y >= 100) {
-            ledcWrite(PWM_CHANNEL, 0 * percent2pwm);
+            wattsToPlant(0);
             vTaskSuspend(nullptr);
         }
         bi = ki*h;
         ad = kd/(N*(kd/N + h));
         bd = kd/(kd/N + h);
-        P = kp*(beta * reference - y);
-        D = ad*D - bd*(y - y_ant); // derivative action
-        //uN = 0;
-        u = P + I + D;// + uN ; // control signal
+        PA = kp * (beta * reference - y);
+        DA = ad * DA - bd * (y - y_ant); // derivative action
+        u = PA + IA + DA;// + uN ; // control signal
         usat =  constrain(u, 0, 100); //señal de control saturada
         wattsToPlant(usat); // Enviar señal de control en bits
-        I = I + bi *(reference - y) + br*(usat - u);  // calculo de la accion integral
+        IA = IA + bi *(reference - y) + br*(usat - u);  // calculo de la accion integral
         y_ant = y;
-        if (reset_int) {I=0;}
+//        if (reset_int) {I=0;}
         vTaskDelayUntil(&xLastWakeTime, taskPeriod);
         np+=1;
     }
@@ -664,81 +664,79 @@ static void identifyTask(void *pvParameters) {
      by means of a PBRS signal
     */
     const TickType_t taskPeriod = (long) (1000 * h);
-    TickType_t xLastWakeTime = xTaskGetTickCount();
-    static uint64_t pbrs = 0x57E08629E8E4B766;
-    static unsigned int bitShift = 0;
-    static bool led_status = false;
-    float kp1 = 5.78785533850858;
-
-    float bi = 0.352680494113446 * h;
+    const uint64_t pbrs = 0x57E08629E8E4B766;
+    static uint bitShift = 0;
+    float kp_id = 16.796;
+    float beta_id = 0.5;
+    float bi = 2 * h;
     bool  currBit;
-    float P = 0;          //  proportional action
-    float uN;
+    float PA;          //  proportional action
     float uf;          //  filtered control signal
-    float usat;       //  saturated control signal
-    static float I = 0;
+    float IA;
+
+    TickType_t xLastWakeTime;
 
     for (;;) {
-        uint32_t inicio = xTaskGetTickCount();
-        led_status = !led_status;
+        xLastWakeTime = xTaskGetTickCount();
+        if (reset_int) {
+            np = 0;
+            IA = 0;
+            reset_int = false;
+            continue;
+        }
+        // This is for protecting the system both if the sensor fails or there is overtemperature
+        if (y <= 0 || y >= 100) {
+            ledcWrite(PWM_CHANNEL, 0 * percent2pwm);
+            continue;
+        }
 
         sensors.requestTemperatures();
         y = sensors.getTempCByIndex(0);
 
-        // This is for protecting the system both if the sensor fails  there is overtemperature
-        if (y <= 0 || y >= 100) {
-            ledcWrite(PWM_CHANNEL, usat * percent2pwm);
-            continue;
-        }
-        if (np == 0)  {
-            I = 0;
-        }
         if (np < stab_points) {
-            P = -kp1 * y;
-            uN =  0.971914417613643 * reference - 24.7354557071619;
-            u = P + I + uN;
-            usat = constrain(u, 0, 100);
-            ledcWrite(PWM_CHANNEL, usat * percent2pwm);
+            PA = kp_id * (beta_id * reference - y);
+            u = PA + IA ; // control signal
+            usat =  constrain(u, 0, 100); //señal de control saturada
+            wattsToPlant(usat);
             uf = movingAverage(usat);
-            // Integral action for setting the operating point
-            I = I + bi * (reference - y) + br * (usat - u);
-            displayLed(u, 0, 80, 0, 0);
-            displayLed(y, 0, 80, 0, 1);
+            IA = IA + bi *(reference - y) + br*(usat - u);  // calculo de la accion integral
+            displayLed(u, 0, 90, 0.25, 2);
+            displayLed(y, 20, 90, 0.25, 0);
+        }
+        else if (np <= stab_points + uee_points) {
+            usat = uf;
+            wattsToPlant(usat);
+            displayLed(usat, uf - 1.2*high_val, uf + 1.2*high_val, 0.25, 2);
+            displayLed(y, reference - 5, reference + 5,  0.25,0);
+        }
 
-        } else if (np <= stab_points + uee_points) {
-            u = uf;
-            displayLed(u, uf - high_val, uf + high_val, 0, 0);
-            displayLed(y, reference - 5, reference + 5,  0,1);
-
-        } else if ((np <= total_time) & (codeTopic == USER_SYS_PRBS_OPEN_INT)) {
+        else if ((np <= total_time) & (codeTopic == USER_SYS_PRBS_OPEN_INT)) {
             bitShift = (int) ((np - stab_points - uee_points) / divider);
             currBit = (pbrs >> bitShift) & 1;
             if (currBit) {
-                u = high_val + uf;
+                usat = high_val + uf;
             } else {
-                u = uf - high_val;
+                usat = uf - high_val;
             }
-            displayLed(u, uf - high_val, uf + high_val,0,  0);
-            displayLed(y, reference - high_val, reference + high_val, 0, 1);
-            ledcWrite(PWM_CHANNEL, u * percent2pwm);
-        } else if ((np <= total_time) & (codeTopic == USER_SYS_STEP_OPEN_INT)) {
-            u = high_val + uf;
-            ledcWrite(PWM_CHANNEL, u * percent2pwm);
-        } else if (np == total_time + 1) {
-            ledcWrite(PWM_CHANNEL, 0);
+            wattsToPlant(usat);
+        }
+        else if ((np <= total_time) & (codeTopic == USER_SYS_STEP_OPEN_INT)) {
+            usat = high_val + uf;
+            wattsToPlant(usat);
+        }
+        else if (np == total_time + 1) {
+            wattsToPlant(0);
             if (codeTopic == USER_SYS_STEP_OPEN_INT) {
                 printf("Open loop step response completed\n");
             }
             if (codeTopic == USER_SYS_PRBS_OPEN_INT) {
                 printf("PBRS open loop response completed\n");
             }
-            dispLeds.clear();
-            dispLeds.show();
-            vTaskSuspend(h_identifyTask);
+            defaultControl();
         }
-        np += 1;
         xTaskNotify(h_publishStateTask, 0b0010, eSetBits);
         vTaskDelayUntil(&xLastWakeTime, taskPeriod);
+        np += 1;
     }
 }
 
@@ -885,6 +883,8 @@ void setup() {
             &h_menuTask,
             CORE_COMM
     );
+
+
     touchAttachInterrupt(BUTTON_PLUS, gotButtPlus, THRESHOLD_PLUS);
     touchAttachInterrupt(BUTTON_MINUS, gotButtMinus, THRESHOLD_MINUS);
 
