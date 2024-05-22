@@ -5,9 +5,10 @@ import struct
 from queue import Queue
 import math
 import json
-import numpy as npy
+import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
+from pathlib import Path
 matplotlib.use("TkAgg", force=True)
 
 # parameters of communication
@@ -34,7 +35,9 @@ codes ={"SYS_USER_SIGNALS_CLOSED"  : "/thermal/thermal_" + PLANT_NUMBER + "/user
         }
 
 
-class SystemIoT:
+PATH = r"./experiment_files/"
+
+class ThermalSystemIoT:
 
     def __init__(self, broker_address = BROKER, port= PORT, client_id="", clean_session=True):
         self.client = mqtt.Client()
@@ -79,7 +82,7 @@ class SystemIoT:
     def subscribe(self, topic, qos=2):
         self.client.subscribe(topic, qos)
 
-    def publish(self, topic, message, qos=1):
+    def publish(self, topic, message, qos=2):
         self.client.publish(topic, message, qos)
 
     def transfer_function(self, temperature=50):
@@ -158,14 +161,18 @@ def set_pid(system, kp=1, ki=0.4, kd=0, N=5, beta=1):
     return rcode
 
 
-def step_closed(system, low_val=30, high_val=50, low_time=60, high_time=120, filepath ="step_closed_exp.csv"):
+def step_closed(system, r0=0 , r1=100, t0=0 ,  t1=1, filepath = PATH + "DCmotor_step_closed_exp.csv"):
     def step_message(system, userdata, message):
         q.put(message)
 
+    low_val = r0
+    high_val = r1
+    low_time = t0
+    high_time = t1
     topic_pub = system.codes["USER_SYS_STEP_CLOSED"]
     topic_sub = system.codes["SYS_USER_SIGNALS_CLOSED"]
     sampling_time = system.codes["THERMAL_SAMPLING_TIME"]
-    points_high = round(high_time / sampling_time) + 1
+    points_high = round(high_time / sampling_time) 
     points_low = round(low_time / sampling_time)
     points_low_hex = long2hex(points_low)
     points_high_hex = long2hex(points_high)
@@ -182,22 +189,22 @@ def step_closed(system, low_val=30, high_val=50, low_time=60, high_time=120, fil
     system.subscribe(topic_sub)
     system.publish(topic_pub, message)
     q = Queue()
-    np = -1
     y = []
     r = []
     u = []
     t = []
     fig, ax = plt.subplots()
     line_r, = ax.plot(t, r, 'b-')
-    line_y, = ax.plot(t, y, linestyle = 'solid', color="#008066ff", linewidth=1.25) # drawstyle='steps'
+    line_y, = ax.plot(t, y, linestyle = 'solid', color="#008066ff", linewidth=1.25)
+    line_u, = ax.plot(t, u, linestyle='solid', color="#ff0000ff", linewidth=1.25)
     points = points_high + points_low
     ax.set_xlim(0, sampling_time * (points - 1))
-    ax.set_ylim(low_val - 10, high_val + 10)
-    #ax.set_ylim(20, high_val + 10)
+    #ax.set_ylim(low_val - 10, high_val + 10)
+    ax.set_ylim(10, 100)
     plt.grid()
-    npc = 1
+    n = -1
     exp = []
-    while npc <= points:
+    while n <= points:
         try:
             message = q.get(True, 20 * sampling_time)
         except:
@@ -205,28 +212,25 @@ def step_closed(system, low_val=30, high_val=50, low_time=60, high_time=120, fil
 
         decoded_message = str(message.payload.decode("utf-8"))
         msg_dict = json.loads(decoded_message)
-        
-        np_hex = str(msg_dict["np"])
-        np = hex2long(np_hex)
+        n_hex = str(msg_dict["np"])
+        n = hex2long(n_hex)
+        t_curr = n * sampling_time
+        t.append(t_curr)
+        y_curr = hex2float(msg_dict["y"])
+        y.append(y_curr)
+        r_curr = hex2float(msg_dict["r"])
+        r.append(r_curr)
+        u_curr = hex2float(msg_dict["u"])
+        u.append(u_curr)
+        line_r.set_data(t, r)
+        line_y.set_data(t, y)
+        line_u.set_data(t, u)
+        exp.append([t_curr, r_curr, y_curr, u_curr])
+        plt.draw()
+        plt.pause(sampling_time)
 
-        if (np == npc) and (np >= 0):
-            t_curr = (np - 1) * sampling_time
-            t.append(t_curr)
-            y_curr = hex2float(msg_dict["y"])
-            y.append(y_curr)
-            r_curr = hex2float(msg_dict["r"])
-            r.append(r_curr)
-            u_curr = hex2float(msg_dict["u"])
-            u.append(u_curr)
-            line_r.set_data(t, r)
-            line_y.set_data(t, y)
-            exp.append([t_curr, r_curr, y_curr, u_curr])
-            plt.draw()
-            plt.pause(sampling_time)
-            npc += 1
-
-    npy.savetxt(filepath, exp, delimiter=",",
-                fmt="%0.8f", comments="", header='t,r,y,u')
+    Path(PATH).mkdir(exist_ok=True)
+    np.savetxt(filepath, exp, delimiter=",", fmt="%0.8f", comments="", header='t,r,y,u')
     system.disconnect()
     plt.show()
     print("Step response completed")
@@ -298,201 +302,6 @@ def stair_closed(system, stairs=[40, 50, 60], duration=100, filepath = "stair_cl
     return t, y, r, u
 
 
-def pbrs_open(system, op_point=50, peak_amp=5, stab_time=150, uee_time=20, divider=35, filepath = "prbs_open_exp.csv"):
-    def pbrs_message(system, userdata, message):
-        q.put(message)
-
-    topic_pub = system.codes["USER_SYS_PRBS_OPEN"]
-    topic_sub = system.codes["SYS_USER_SIGNALS_OPEN"]
-    sampling_time = system.codes["THERMAL_SAMPLING_TIME"]
-    peak_amp_hex = float2hex(peak_amp)
-    op_point_hex = float2hex(op_point)
-    stab_points = math.ceil(stab_time / sampling_time)
-    uee_points = math.ceil(uee_time / sampling_time)
-    stab_points_hex = long2hex(stab_points)
-    uee_points_hex = long2hex(uee_points)
-    divider_hex = long2hex(divider)
-    points = divider * 63 + stab_points + uee_points
-    message = json.dumps({"peak_amp": peak_amp_hex,
-                          "op_point": op_point_hex,
-                          "stab_points": stab_points_hex,
-                          "uee_points": uee_points_hex,
-                          "divider": divider_hex
-                          })
-    system.client.on_message = pbrs_message
-    system.connect()
-    system.subscribe(topic_sub)
-    system.publish(topic_pub, message)
-    q = Queue()
-    np = None
-    y = []
-    u = []
-    t = []
-    yt = []
-    ut = []
-    tt = []
-    exp = []
-    fig, ax = plt.subplots()
-    line_y, = ax.plot(t, y, color="#ffcc00")
-    line_u, = ax.plot(t, u, color="#00d4aa")
-    line_yt, = ax.plot(t, yt, color="#d40055")
-    line_ut, = ax.plot(t, ut, color="#338000")
-    a1 = 0.971914417613643
-    a2 = -24.7354557071619
-    uf_est = a1 * op_point + a2
-    Tmax_est = (uf_est + peak_amp - a2) / a1
-    Tmin_est = (uf_est - peak_amp - a2) / a1
-    umin_est = a1 * Tmin_est + a2
-    ax.set_xlim(0, sampling_time * points)
-    ax.set_ylim(umin_est - 5, Tmax_est + 5)
-    plt.grid()
-    npc = 1
-    while npc <= points:
-        try:
-            message = q.get(True, 20 * sampling_time)
-        except:
-            raise TimeoutError("The connection has been lost. Please try again")
-
-        decoded_message = str(message.payload.decode("utf-8"))
-        msg_dict = json.loads(decoded_message)
-        np_hex = str(msg_dict["np"])
-        np = hex2long(np_hex)
-        print(points, npc, np, hex2float(msg_dict["u"]), hex2float(msg_dict["y"]))
-        if np == npc:
-            if npc <= stab_points + uee_points:
-                t_curr = (np - 1) * sampling_time
-                t.append(t_curr)
-                y_curr = hex2float(msg_dict["y"])
-                y.append(y_curr)
-                u_curr = hex2float(msg_dict["u"])
-                u.append(u_curr)
-                line_y.set_data(t, y)
-                line_u.set_data(t, u)
-                if npc == stab_points + uee_points:
-                    tt.append(t_curr)
-                    yt.append(y_curr)
-                    ut.append(u_curr)
-
-                    #exp.append([0, u_curr, y_curr])
-            else:
-                tt_curr = (np - 1) * sampling_time
-                if npc == stab_points + uee_points + 1:
-                    t0 = t_curr
-                tt.append(tt_curr)
-                yt_curr = hex2float(msg_dict["y"])
-                yt.append(yt_curr)
-                ut_curr = hex2float(msg_dict["u"])
-                ut.append(ut_curr)
-                line_yt.set_data(tt, yt)
-                line_ut.set_data(tt, ut)
-                line_y.set_data(t, y)
-                line_u.set_data(t, u)
-                exp.append([tt_curr-t0, ut_curr, yt_curr])
-            plt.draw()
-            plt.pause(0.1)
-            npc += 1
-    npy.savetxt(filepath, exp, delimiter=",",
-                fmt="%0.8f", comments="", header='t,u,y')
-    system.disconnect()
-    plt.show()
-    return t, u, y
-
-
-def step_open(system, op_point=50, amplitude=5, high_time=200, stab_time=150, uee_time=20, filepath = "step_open_exp.csv"):
-    def step_message(system, userdata, message):
-        q.put(message)
-
-    topic_pub = system.codes["USER_SYS_STEP_OPEN"]
-    topic_sub = system.codes["SYS_USER_SIGNALS_OPEN"]
-    sampling_time = system.codes["THERMAL_SAMPLING_TIME"]
-    amp_hex = float2hex(amplitude)
-    points_high = math.ceil(high_time / sampling_time)
-    points_high_hex = long2hex(points_high)
-    op_point_hex = float2hex(op_point)
-    stab_points = math.ceil(stab_time / sampling_time)
-    uee_points = math.ceil(uee_time / sampling_time)
-    stab_points_hex = long2hex(stab_points)
-    uee_points_hex = long2hex(uee_points)
-    message = json.dumps({"amplitude": amp_hex,
-                          "op_point": op_point_hex,
-                          "stab_points": stab_points_hex,
-                          "uee_points": uee_points_hex,
-                          "points_high": points_high_hex,
-                          })
-    system.client.on_message = step_message
-    system.connect()
-    system.subscribe(topic_sub)
-    system.publish(topic_pub, message)
-    q = Queue()
-    np = None
-    y = []
-    u = []
-    t = []
-    yt = []
-    ut = []
-    tt = []
-    exp =[]
-    fig, ax = plt.subplots()
-    line_y, = ax.plot(t, y, color="#ffcc00")
-    line_u, = ax.plot(t, u, color="#00d4aa")
-    line_yt, = ax.plot(t, yt, color="#d40055")
-    line_ut, = ax.plot(t, ut, color="#338000")
-
-    a1 = 0.971914417613643
-    a2 = -24.7354557071619
-    uf_est = a1 * op_point + a2
-    points = stab_points + uee_points + points_high
-    Tmax_est = (uf_est + amplitude - a2) / a1
-    ax.set_xlim(0, sampling_time * points)
-    ax.set_ylim(uf_est - 5, Tmax_est + 5)
-    plt.grid()
-    npc = 1
-    while npc <= points:
-        try:
-            message = q.get(True, 20 * sampling_time)
-        except:
-            raise TimeoutError("The connection has been lost. Please try again")
-
-        decoded_message = str(message.payload.decode("utf-8"))
-        msg_dict = json.loads(decoded_message)
-        np_hex = str(msg_dict["np"])
-        np = hex2long(np_hex)
-        print(points, npc, np, hex2float(msg_dict["u"]), hex2float(msg_dict["y"]))
-        if np == npc:
-            if npc <= stab_points + uee_points:
-                t_curr = (np - 1) * sampling_time
-                t.append(t_curr)
-                y_curr = hex2float(msg_dict["y"])
-                y.append(y_curr)
-                u_curr = hex2float(msg_dict["u"])
-                u.append(u_curr)
-                line_y.set_data(t, y)
-                line_u.set_data(t, u)
-
-            else:
-
-                tt_curr = (np - 1) * sampling_time
-                if npc <= stab_points + uee_points + 1:
-                    t0 = tt_curr
-                tt.append(tt_curr)
-                yt_curr = hex2float(msg_dict["y"])
-                yt.append(yt_curr)
-                ut_curr = hex2float(msg_dict["u"])
-                ut.append(ut_curr)
-                exp.append([tt_curr - t0, ut_curr, yt_curr])
-                line_yt.set_data(tt, yt)
-                line_ut.set_data(tt, ut)
-                line_y.set_data(t, y)
-                line_u.set_data(t, u)
-            plt.draw()
-            plt.pause(0.1)
-            npc += 1
-    npy.savetxt(filepath, exp, delimiter=",",
-                fmt="%0.8f", comments="", header='t,u,y')
-    system.disconnect()
-    plt.show()
-    return t, u, y
-
 
 def set_controller(system, controller):
     topic_pub = system.codes["USER_SYS_SET_GENCON"]
@@ -537,11 +346,19 @@ def set_controller(system, controller):
     return rcode
 
 
+
+
+
+
+
+
+
+
 if __name__ == "__main__":
-    plant = SystemIoT()
+    plant = ThermalSystemIoT()
     print(plant.transfer_function(80))
-    set_pid(plant, kp=16.796, ki=2, kd=16.441, N=27.38, beta=1)
-    t,  r, y, u = step_closed(plant, 50, 60, 50, 50)
+    set_pid(plant, kp=16.796, ki=2, kd=16.441, N=27.38, beta=0.5)
+    t,  r, y, u = step_closed(plant, 40, 60, 30, 30)
     #signal = [30, 40, 50, 60, 70, 80]
     # set_pid(plant, kp = 16.796, ki = 5, kd = 16.441, N = 27.38, beta = 1)
     #step_open(plant, op_point=45, amplitude=5, high_time=200, stab_time=150, uee_time=20)

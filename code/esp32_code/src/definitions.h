@@ -4,7 +4,7 @@
 
 //This is the pwm configuration for the thermal system
 
-#define  FREQUENCY_PWM     100
+#define  FREQUENCY_PWM     1000
 #define  RESOLUTION_PWM    12
 #define  POWER_PIN         17 // 25
 #define  PWM_CHANNEL       0
@@ -22,7 +22,7 @@
 #define ONE_WIRE_BUS      1//  4
 
 // System definitions
-#define DEFAULT_REFERENCE 45
+#define DEFAULT_REFERENCE 15
 #define SAMPLING_TIME 1
 
 
