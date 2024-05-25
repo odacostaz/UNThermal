@@ -31,7 +31,7 @@ codes ={"SYS_USER_SIGNALS_CLOSED"  : "/thermal/thermal_" + PLANT_NUMBER + "/user
         "USER_SYS_PRBS_OPEN": "/thermal/user/thermal_" + PLANT_NUMBER + "/prbs_open",
         "USER_SYS_STEP_OPEN": "/thermal/user/thermal_" + PLANT_NUMBER + "/step_open",
         "USER_SYS_SET_GENCON": "/thermal/user/thermal_" + PLANT_NUMBER + "/set_gencon",
-        "THERMAL_SAMPLING_TIME" : 1
+        "THERMAL_SAMPLING_TIME" : 0.8
         }
 
 
@@ -161,9 +161,11 @@ def set_pid(system, kp=1, ki=0.4, kd=0, N=5, beta=1):
     return rcode
 
 
-def step_closed(system, r0=0 , r1=100, t0=0 ,  t1=1, filepath = PATH + "DCmotor_step_closed_exp.csv"):
+def step_closed(system, r0=0 , r1=100, t0=0 ,  t1=1, filepath = PATH + "Thermal_step_closed_exp.csv"):
     def step_message(system, userdata, message):
         q.put(message)
+
+    Path(PATH).mkdir(exist_ok=True)
 
     low_val = r0
     high_val = r1
@@ -174,6 +176,7 @@ def step_closed(system, r0=0 , r1=100, t0=0 ,  t1=1, filepath = PATH + "DCmotor_
     sampling_time = system.codes["THERMAL_SAMPLING_TIME"]
     points_high = round(high_time / sampling_time) 
     points_low = round(low_time / sampling_time)
+    points = points_low + points_high
     points_low_hex = long2hex(points_low)
     points_high_hex = long2hex(points_high)
     low_val_hex = float2hex(low_val)
@@ -193,18 +196,52 @@ def step_closed(system, r0=0 , r1=100, t0=0 ,  t1=1, filepath = PATH + "DCmotor_
     r = []
     u = []
     t = []
-    fig, ax = plt.subplots()
-    line_r, = ax.plot(t, r, 'b-')
-    line_y, = ax.plot(t, y, linestyle = 'solid', color="#008066ff", linewidth=1.25)
-    line_u, = ax.plot(t, u, linestyle='solid', color="#ff0000ff", linewidth=1.25)
-    points = points_high + points_low
-    ax.set_xlim(0, sampling_time * (points - 1))
-    #ax.set_ylim(low_val - 10, high_val + 10)
-    ax.set_ylim(10, 100)
-    plt.grid()
-    n = -1
+
+
+    # Setting the graphics configuration for visualizing the experiment
+    fig, (ay, au) = plt.subplots(nrows=2, ncols=1, width_ratios = [1], height_ratios= [4,1], figsize=(16, 9))
+    fig.set_facecolor('#b7c4c8f0')
+
+    # settings for the upper axes, depicting the model and speed data
+    ay.set_title(f'Closed loop step response experiment with an initial value of  $r_0=${r0:0.2f} and a  final value of $r_0=${r1:0.2f}')
+    ay.set_ylabel('')
+    ay.grid(True);
+    ay.grid(color='#806600ff', linestyle='--', linewidth=0.25)
+    ay.set_facecolor('#f4eed7ff')
+    ay.set_xlim(0, t0 + t1  - sampling_time)
+
+    #Setting the limits of figure
+    py = 0.3
+    delta_r = abs(r1 - r0)
+    ylimits = [r0 , r1]
+    ylimits = [np.min(ylimits)- py * delta_r , np.max(ylimits) + py * delta_r]
+
+    ay.set_ylim(ylimits[0], ylimits[1])
+
+    au.set_facecolor('#d7f4e3ff')
+    au.set_ylim(0, 100)
+    au.set_xlim(0, t0 + t1 - sampling_time )
+    au.grid(color='#008066ff', linestyle='--', linewidth=0.25)
+
+
+    line_r, = ay.plot(t, r, drawstyle='steps-post', color="#008066ff", linewidth=1.25)
+    line_y, = ay.plot(t, y, color="#ff0066ff")
+    line_u, = au.plot(t, u, color="#0066ffff")
+
+
+
+
+
+    box = dict(boxstyle='round,pad=0.5', facecolor='white', edgecolor='white', alpha=0.75)
+    # y_txt = ay.text( t0 + t1- 3, ylimits[0] + 1 , 'Temperature:\n ', fontsize=15, color="#ff6680",ha='right', va='bottom', bbox=box)
+    # u_txt = au.text(t0 + t1 - 3 , 15, f'Input:', fontsize=15, color="#0066ffB0",ha='right', va='bottom', bbox=box)
+
+
     exp = []
-    while n <= points:
+    n = -1
+    sync = False
+
+    while n < points:
         try:
             message = q.get(True, 20 * sampling_time)
         except:
@@ -214,25 +251,30 @@ def step_closed(system, r0=0 , r1=100, t0=0 ,  t1=1, filepath = PATH + "DCmotor_
         msg_dict = json.loads(decoded_message)
         n_hex = str(msg_dict["np"])
         n = hex2long(n_hex)
-        t_curr = n * sampling_time
-        t.append(t_curr)
-        y_curr = hex2float(msg_dict["y"])
-        y.append(y_curr)
-        r_curr = hex2float(msg_dict["r"])
-        r.append(r_curr)
-        u_curr = hex2float(msg_dict["u"])
-        u.append(u_curr)
-        line_r.set_data(t, r)
-        line_y.set_data(t, y)
-        line_u.set_data(t, u)
-        exp.append([t_curr, r_curr, y_curr, u_curr])
-        plt.draw()
-        plt.pause(sampling_time)
+        if n == 0:
+            sync = True
+        if sync == True:
+            t_curr = n * sampling_time
+            t.append(t_curr)
+            y_curr = hex2float(msg_dict["y"])
+            y.append(y_curr)
+            r_curr = hex2float(msg_dict["r"])
+            r.append(r_curr)
+            u_curr = hex2float(msg_dict["u"])
+            u.append(u_curr)
+            line_r.set_data(t, r)
+            line_y.set_data(t, y)
+            line_u.set_data(t, u)
+            ay.legend([line_r, line_y], [f'$r(t):$ {r_curr:0.2f}', f'$y(t):$ {y_curr: 0.3f}$~^oC$'], fontsize=16, loc="upper left")
+            au.legend([line_u], [f'$u(t):$ {u_curr: 0.1f}'], fontsize=16)
+            exp.append([t_curr, r_curr, y_curr, u_curr])
+            plt.draw()
+            plt.pause(sampling_time)
 
-    Path(PATH).mkdir(exist_ok=True)
+
+    plt.show()
     np.savetxt(filepath, exp, delimiter=",", fmt="%0.8f", comments="", header='t,r,y,u')
     system.disconnect()
-    plt.show()
     print("Step response completed")
     return t, r, y, u
 
@@ -303,47 +345,79 @@ def stair_closed(system, stairs=[40, 50, 60], duration=100, filepath = "stair_cl
 
 
 
-def set_controller(system, controller):
+def set_controller(system, controller, struct = 2):
+
+    if struct == 1:
+        type_control = 0
+    elif struct == 2:
+        type_control = 1
+    else:
+        raise ValueError("valid value for struct is a number (1 or 2)")
+
+
     topic_pub = system.codes["USER_SYS_SET_GENCON"]
     sampling_time = system.codes["THERMAL_SAMPLING_TIME"]
-    Cvecont = ct.tf2ss(controller)
-    Cve = ct.c2d(Cvecont, sampling_time, method='tustin')
-    Ac = Cve.A
-    Bc = Cve.B
+    if struct == 2:
+        con1 = ct.tf2ss(ct.tf(controller.num[0][0],controller.den[0][0]))
+        con2 = ct.tf2ss(ct.tf(controller.num[0][1], controller.den[0][1]))
+        cond1 = ct.c2d(con1, sampling_time, method='tustin')
+        cond2 = ct.c2d(con2, sampling_time, method='tustin')
+        AM1, BM1, CM1, DM1 = con1.A, con1.B, con1.C, con1.D
+        AM2, BM2, CM2, DM2 = con2.A, con2.B, con2.C, con2.D
+        BM12 = np.block([[BM1], [BM2]])
+        BM12 = BM12.T
+        print(AM1)
+        print(BM12)
+        CM12 = np.block([CM1, CM2])
+        DM12 = np.block([DM1, DM2])
+        Cve = ct.ss(AM1, BM12, CM12, DM12)
+    elif struct == 1:
+        Cvecont = ct.tf2ss(controller)
+        Cve = ct.c2d(Cvecont, sampling_time, method='tustin')
+
+    # Ai, Bi, Ci, Di = Cve.A, Cve.B[:, 0], Cve.C, Cve.D[0][0]
+    # int_system = ct.ss(Ai, Bi, Ci, Di)
+    # int_system, T = ct.canonical_form(int_system)
+    # Cve = ct.similarity_transform(Cve, T)
+
+    A = Cve.A
+    B = Cve.B
     Cc = Cve.C
     Dc = Cve.D
-
-    if (npy.size(Bc, axis=1)) == 1:
+    In = np.diag([100 for i in range(order)])
+    L, S, E = ct.dlqr(np.transpose(A), np.transpose(Cc), In, 1)
+    # P = [0.6 + 0.001*j for j in range(order)]
+    # L = ct.place(np.transpose(A), np.transpose(Cc), P)
+    L = np.transpose(L)
+    Ac = A - L * Cc
+    Bc = B - L * Dc
+    if struct == 1:
         B1 = []
         for row in Bc:
             for e in row:
                 B1.append([e, -e])
-        Bc = npy.array(B1)
-        Dc = npy.array([[Dc[0][0], -Dc[0][0]]])
-    order = len(Ac)
-    order_hex = long2hex(order)
-    P = [(i + 1) * 1e-8 for i in range(order)]
-    L = ct.place(npy.transpose(Ac), npy.transpose(Cc), P)
-    L = npy.transpose(L)
-    A = Ac - L * Cc
-    B = Bc - L * Dc
-    A_hex = matrix2hex(A)
-    B_hex = matrix2hex(B)
+        Bc = np.array(B1)
+        Dc = np.array([[Dc[0][0], -Dc[0][0]]])
+    A_hex = matrix2hex(Ac)
+    B_hex = matrix2hex(Bc)
     C_hex = matrix2hex(Cc)
     D_hex = matrix2hex(Dc)
     L_hex = matrix2hex(L)
+    order_hex = long2hex(order)
+    type_control_hex = long2hex(type_control)
     message = json.dumps({"order": order_hex,
                           "A": A_hex,
                           "B": B_hex,
                           "C": C_hex,
                           "D": D_hex,
-                          "L": L_hex
+                          "L": L_hex,
+                          "typeControl": type_control_hex,
                           })
+
     system.connect()
     system.publish(topic_pub, message)
     system.disconnect()
-    rcode = True
-    return rcode
+    return
 
 
 
