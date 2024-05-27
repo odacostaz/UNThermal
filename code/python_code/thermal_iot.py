@@ -9,6 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
 from pathlib import Path
+from scipy.signal import cont2discrete
 matplotlib.use("TkAgg", force=True)
 
 # parameters of communication
@@ -345,58 +346,102 @@ def stair_closed(system, stairs=[40, 50, 60], duration=100, filepath = "stair_cl
 
 
 
-def set_controller(system, controller, struct = 2):
-
-    if struct == 1:
-        type_control = 0
-    elif struct == 2:
-        type_control = 1
-    else:
-        raise ValueError("valid value for struct is a number (1 or 2)")
+def set_controller(system, controller):
 
 
     topic_pub = system.codes["USER_SYS_SET_GENCON"]
     sampling_time = system.codes["THERMAL_SAMPLING_TIME"]
-    if struct == 2:
-        con1 = ct.tf2ss(ct.tf(controller.num[0][0],controller.den[0][0]))
-        con2 = ct.tf2ss(ct.tf(controller.num[0][1], controller.den[0][1]))
-        cond1 = ct.c2d(con1, sampling_time, method='tustin')
-        cond2 = ct.c2d(con2, sampling_time, method='tustin')
-        AM1, BM1, CM1, DM1 = con1.A, con1.B, con1.C, con1.D
-        AM2, BM2, CM2, DM2 = con2.A, con2.B, con2.C, con2.D
-        BM12 = np.block([[BM1], [BM2]])
-        BM12 = BM12.T
-        print(AM1)
-        print(BM12)
-        CM12 = np.block([CM1, CM2])
-        DM12 = np.block([DM1, DM2])
-        Cve = ct.ss(AM1, BM12, CM12, DM12)
-    elif struct == 1:
-        Cvecont = ct.tf2ss(controller)
-        Cve = ct.c2d(Cvecont, sampling_time, method='tustin')
+    struct = len(controller.den[0])
+    type_control = struct - 1
 
-    # Ai, Bi, Ci, Di = Cve.A, Cve.B[:, 0], Cve.C, Cve.D[0][0]
-    # int_system = ct.ss(Ai, Bi, Ci, Di)
-    # int_system, T = ct.canonical_form(int_system)
-    # Cve = ct.similarity_transform(Cve, T)
 
+    if struct == 1:
+        con = ct.tf(ct.tf(controller.num[0][0], controller.den[0][0]))
+        N1, D1 = ct.tfdata(con)
+        N1 = N1[0][0]
+        D1 = D1[0][0]
+        N1 = N1 / D1[0]
+        D1 = D1 / D1[0]
+
+        if len(N1) == len(D1):
+            d1 = N1[0]
+            N1 = N1 - d1* D1
+            N1 = N1[1:]
+        else:
+            d1 = 0
+
+        DB = np.array([-D1[1:]])
+        DB = DB.T
+        size = len(D1)-2
+        In_1 = np.eye(size)
+        ZR = np.zeros((1,size))
+        Acon = np.block([[In_1], [ZR]])
+        Acon = np.block([DB, Acon])
+        Bcon = np.array([N1]).T
+        Ccon = np.append([1], ZR)
+        Dcon = np.array([d1])
+
+
+
+    elif struct == 2:
+        con1 = ct.tf(ct.tf(controller.num[0][0], controller.den[0][0]))
+        con2 = ct.tf(ct.tf(controller.num[0][1], controller.den[0][1]))
+        N1, D1 = ct.tfdata(con1)
+        N2, D2 = ct.tfdata(con2)
+        N1 = N1[0][0]
+        D1 = D1[0][0]
+        N1 = N1 / D1[0]
+        D1 = D1 / D1[0]
+        N2 = N2[0][0]
+        D2 = D2[0][0]
+        N2 = N2 / D2[0]
+        D2 = D2/ D2[0]
+
+        if len(N1) == len(D1):
+            d1 = N1[0]
+            N1 = N1 - d1* D1
+            N1 = N1[1:]
+        else:
+            d1 = 0
+
+        if len(N2) == len(D2):
+            d2 = N2[0]
+            N2 = N2 - d2* D2
+            N2 = N2[1:]
+        else:
+            d2 = 0
+
+        DB = np.array([-D1[1:]])
+        DB = DB.T
+        size = len(D1)-2
+        In_1 = np.eye(size)
+        ZR = np.zeros((1,size))
+        Acon = np.block([[In_1], [ZR]])
+        Acon = np.block([DB, Acon])
+        B1 = np.array([N1]).T
+        B2 = np.array([N2]).T
+        Bcon = np.block([B1,B2])
+        Ccon = np.append([1], ZR)
+        Dcon = np.block([d1, d2])
+
+    Ad, Bd, Cd, Dd, dt = cont2discrete((Acon, Bcon, Ccon, Dcon), sampling_time, method='bilinear')
+    Cve = ct.ss(Ad, Bd, Cd, Dd)
+    Ai, Bi, Ci, Di = Cve.A, Cve.B[:, 0], Cve.C, Cve.D[0][0]
+    int_system = ct.ss(Ai, Bi, Ci, Di)
+    int_system, T = ct.canonical_form(int_system)
+    Cve = ct.similarity_transform(Cve, T)
     A = Cve.A
     B = Cve.B
     Cc = Cve.C
     Dc = Cve.D
-    In = np.diag([100 for i in range(order)])
+    order = np.size(A, 0)
+    In = np.diag([10000 for i in range(order)])
     L, S, E = ct.dlqr(np.transpose(A), np.transpose(Cc), In, 1)
-    # P = [0.6 + 0.001*j for j in range(order)]
-    # L = ct.place(np.transpose(A), np.transpose(Cc), P)
     L = np.transpose(L)
     Ac = A - L * Cc
     Bc = B - L * Dc
     if struct == 1:
-        B1 = []
-        for row in Bc:
-            for e in row:
-                B1.append([e, -e])
-        Bc = np.array(B1)
+        Bc = np.block([Bc, -Bc])
         Dc = np.array([[Dc[0][0], -Dc[0][0]]])
     A_hex = matrix2hex(Ac)
     B_hex = matrix2hex(Bc)
@@ -404,6 +449,7 @@ def set_controller(system, controller, struct = 2):
     D_hex = matrix2hex(Dc)
     L_hex = matrix2hex(L)
     order_hex = long2hex(order)
+    deadzone_hex = float2hex(deadzone)
     type_control_hex = long2hex(type_control)
     message = json.dumps({"order": order_hex,
                           "A": A_hex,
@@ -412,6 +458,7 @@ def set_controller(system, controller, struct = 2):
                           "D": D_hex,
                           "L": L_hex,
                           "typeControl": type_control_hex,
+                          "deadzone": deadzone_hex
                           })
 
     system.connect()
