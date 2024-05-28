@@ -48,8 +48,11 @@ float y = 0;            //  Temperature
 float u = 0;            //  Control signal
 float usat = 0;         //  Control saturation signal
 
-// Vector for defining and arbitrary signal defined by user
+
+// Vectors of values and times for storing  the edges of
+// an user's defined arbitrary signal
 float stairs[50];       //  Arbitrary signal
+uint32_t timeValues[50];
 
 
 // Variables that keep the command sent by the user and the mode of control
@@ -144,6 +147,16 @@ void hexStringToMatrix(float* matrix, const char* hexString, unsigned int order,
 
 }
 
+void hexStringToLongArray(uint32_t *longArray, const char* hexString, unsigned int numLongs) {
+    // This function translates a user-sent hexadecimal string into an array of floats, enabling the transmission
+    // of arbitrary signals and parameters of a controller in a state space form.
+    for (unsigned int  i = 0; i < numLongs; ++i) {
+        uint32_t  temp;
+        sscanf(hexString + i * 8, "%8x", &temp); // Read 8 hex digits (32 bits)
+        memcpy(longArray + i, &temp, sizeof(uint32_t)); // Copy bits into float
+    }
+}
+
 void sensorToColormap(float x, uint8_t * rgbval) {
 
     /** This function calculates the R, G, and B values of a fifth-degree polynomial approximation of the turbo colormap.
@@ -187,6 +200,21 @@ void displayLed(float var, float valmin, float valmax, float start, uint8_t led)
     dispLeds.show();
 }
 
+float linearInterpolation(uint32_t t[], float r[], uint16_t n, uint32_t t_interp) {
+    uint16_t i;
+    float result;
+    float r1;
+
+    for (i = 0; i < n - 1; i++) {
+        if (t[i] <= t_interp && t_interp <= t[i + 1]) {
+            // Linear interpolation formula: y = y1 + (y2 - y1) * ((x - x1) / (x2 - x1))
+            r1 = (float) ( t_interp -  t[i]) / (t[i + 1] - t[i]);
+            result = r[i] + (r[i + 1] - r[i]) *  r1;
+        }
+    }
+    return result;
+}
+
 
 void wattsToPlant(float watts){
     ledcWrite(PWM_CHANNEL, watts * percent2pwm);
@@ -222,6 +250,7 @@ void connectMqtt()
         mqttClient.subscribe(USER_SYS_STEP_OPEN);
         mqttClient.subscribe(USER_SYS_PRBS_OPEN);
         mqttClient.subscribe(USER_SYS_SET_GENCON);
+        mqttClient.subscribe(USER_SYS_PROFILE_CLOSED);
         printf("connected to broker\n");
     }
     else
@@ -247,7 +276,10 @@ void resumeControl(){
         case PID_CONTROLLER:
             vTaskResume(h_controlPidTask);
             break;
-        case GENERAL_CONTROLLER:
+        case GENERAL_CONTROLLER_1P:
+            vTaskResume(h_generalControlTask);
+            break;
+        case GENERAL_CONTROLLER_2P:
             vTaskResume(h_generalControlTask);
             break;
     }
@@ -266,10 +298,9 @@ void defaultControl(){
 
 
 void IRAM_ATTR onMqttReceived(char* lastTopic, byte* lastPayload, unsigned int lenght){
-    JsonDocument doc;
     suspendAllTasks();
+    JsonDocument doc;
     if (strstr(lastTopic, USER_SYS_SET_PID)){
-        codeTopic = USER_SYS_SET_PID_INT;
         typeControl = PID_CONTROLLER;
         deserializeJson(doc, lastPayload);
         kp = hex2Float((const char *) doc["kp"]);
@@ -284,18 +315,11 @@ void IRAM_ATTR onMqttReceived(char* lastTopic, byte* lastPayload, unsigned int l
     }
 
     else if (strstr(lastTopic, USER_SYS_SET_REF )){
-        codeTopic = USER_SYS_SET_REF_INT;
         deserializeJson(doc, lastPayload);
         reference = hex2Float((const char *) doc["reference"]);
-        if(typeControl == PID_CONTROLLER) {
-            vTaskSuspend(h_generalControlTask);
-            vTaskResume(h_controlPidTask);
-        }
-        else if (typeControl == GENERAL_CONTROLLER) {
-            vTaskSuspend(h_controlPidTask);
-            vTaskResume(h_generalControlTask);
-        }
+        reset_int = true;
         printf("Reference has been set to %0.2f degrees \n", reference);
+        defaultControl();
     }
 
     else if (strstr(lastTopic, USER_SYS_STEP_CLOSED )){
@@ -305,9 +329,9 @@ void IRAM_ATTR onMqttReceived(char* lastTopic, byte* lastPayload, unsigned int l
         high_val = hex2Float((const char *) doc["high_val"]);
         points_high = hex2Long((const char *) doc["points_high"]);
         points_low = hex2Long((const char *) doc["points_low"]);
-        reset_int = true;
+        total_time = points_low + points_high;
         printf("Closed loop step response:\n");
-        printf("\tlow value=%0.2f\n\thigh value=%0.2f\n\ttime in high =%0.2f\n\ttime in low=%0.2f\n", low_val,
+        printf("    low value=%0.2f\n    high value=%0.2f\n    time in high =%0.2f\n    time in low=%0.2f\n", low_val,
                high_val, (float) (points_high * h), (float) (points_low * h));
         vTaskResume(h_publishStateTask);
         resumeControl();
@@ -326,15 +350,7 @@ void IRAM_ATTR onMqttReceived(char* lastTopic, byte* lastPayload, unsigned int l
         total_time = points_stairs * duration - 1;
         np = 0;
         Serial.printf("Stairs signal of %d steps  with a duration of %0.2f secs.\n", points_stairs, h * total_time);
-        if(typeControl == PID_CONTROLLER) {
-            vTaskSuspend(h_generalControlTask);
-            vTaskResume(h_controlPidTask);
-        }
-        else if (typeControl == GENERAL_CONTROLLER) {
-            vTaskSuspend(h_controlPidTask);
-            vTaskResume(h_generalControlTask);
-        }
-
+        resumeControl();
     }
 
     else if(strstr(lastTopic, USER_SYS_PRBS_OPEN )) {
@@ -367,18 +383,15 @@ void IRAM_ATTR onMqttReceived(char* lastTopic, byte* lastPayload, unsigned int l
         uee_points = hex2Long((const char *) doc["uee_points"]);
         points_high = hex2Long((const char *) doc["points_high"]);
         total_time = points_high + stab_points + uee_points;
+        reset_int = true;
         np = 0;
         printf("Open loop step response\n");
         printf("\tOperation point= %0.2f\n\tAmplitude=%0.2f\n\tDuration=%0.2f\n", reference, high_val, (points_high-1)*h);
+        vTaskResume(h_publishStateTask);
         vTaskResume(h_identifyTask);
     }
 
     else if(strstr(lastTopic, USER_SYS_SET_GENCON)){
-        codeTopic = USER_SYS_SET_GENCON_INT;
-        typeControl = GENERAL_CONTROLLER;
-        vTaskSuspend(h_identifyTask);
-        vTaskSuspend(h_controlPidTask);
-        vTaskSuspend(h_generalControlTask);
         deserializeJson(doc, lastPayload);
         order = hex2Long((const char *) doc["order"]);
         const char *hex_A = doc["A"];
@@ -386,44 +399,69 @@ void IRAM_ATTR onMqttReceived(char* lastTopic, byte* lastPayload, unsigned int l
         const char *hex_C = doc["C"];
         const char *hex_D = doc["D"];
         const char *hex_L = doc["L"];
-        //D = hex2Float((const char *) doc["D"]);
-        hexStringToMatrix( *A, hex_A, order, order, 10 );
+        typeControl  = hex2Long((const char *) doc["typeControl"]);
+        hexStringToMatrix( *A, hex_A, order, order, MAX_ORDER);
         hexStringToMatrix( *B, hex_B, order, 2, 2);
-        //hexStringToFloatArray(B, hex_B, order);
         hexStringToFloatArray(C, hex_C, order);
         hexStringToFloatArray(D, hex_D, 2);
         hexStringToFloatArray(L, hex_L, order);
         printf("A general controller or order %d has been loaded\n", order);
         printf("A=\n");
-        for (size_t i =0; i < order; i++ ){
+        for ( uint8_t  i =0; i < order; i++ ){
             for (size_t j =0; j < order; j++ ) {
-                printf("%0.4f\t", A[i][j]);
+                printf("%0.4f    ", A[i][j]);
             }
             printf("\n");
         }
         printf("B=\n");
-        for (size_t i =0; i < order; i++ ) {
+        for (uint8_t  i =0; i < order; i++ ) {
             for (size_t j =0; j < 2; j++ ) {
-                printf("%0.4f\t", B[i][j]);
+                printf("%0.4f    ", B[i][j]);
             }
             printf("\n");
         }
         printf("C=\n");
-        for (size_t j =0; j < order; j++ ) {
-            printf("%0.4f\t", C[j]);
+        for (uint8_t  j =0; j < order; j++ ) {
+            printf("%0.4f    ", C[j]);
         }
         printf("\n");
         printf("D = %0.4f   %0.4f \n", D[0], D[1]);
         printf("L=\n");
-        for (size_t j =0; j < order; j++ ) {
-            printf("%0.4f\t", L[j]);
+        for (uint8_t  j =0; j < order; j++ ) {
+            printf("%0.4f    ", L[j]);
         }
         printf("\n");
-
-
+        printf("control code: %d\n", typeControl);
+        reset_int = true;
+        defaultControl();
+    }
+    else if(strstr(lastTopic, USER_SYS_PROFILE_CLOSED)){
+        codeTopic = USER_SYS_PROFILE_CLOSED_INT;
+        deserializeJson(doc, lastPayload);
+        points_stairs = hex2Long((const char *) doc["points"]);
+        low_val = hex2Float((const char *) doc["min_val"]);
+        high_val = hex2Float((const char *) doc["max_val"]);
+        const char *timeValuesHex = doc["timevalues"];
+        const char *stairsHex = doc["refvalues"];
+        hexStringToFloatArray(stairs, stairsHex, points_stairs);
+        hexStringToLongArray(timeValues, timeValuesHex, points_stairs);
+        total_time = timeValues[points_stairs - 1];
+        reset_int = true;
+        printf("Closed loop profile response with a duration of %0.2f secs.\n", total_time * h);
+        printf("   refvalues = [ ");
+        for (uint8_t  j =0; j < points_stairs; j++ ) {
+            printf("%0.2f ", stairs[j]);
+        }
+        printf("]\n");
+        printf("   timevalues = [ ");
+        for (uint8_t  j =0; j < points_stairs; j++ ) {
+            printf("%0.2f ", timeValues[j] * h);
+        }
+        printf("]\n");
+        resumeControl();
+        vTaskResume(h_publishStateTask);
 
     }
-
 
 
 }
@@ -485,18 +523,15 @@ float movingAverage(float newValue) {
 void  computeReference() {
    switch (codeTopic) {
         case DEFAULT_TOPIC:
-            //reference = DEFAULT_REFERENCE;
-            //displayLed(ref, 30, 50, 0, 2);
             displayLed(y, 0, 100, 0.25, 0);
             displayLed(reference, 0, 100, 0.25, 1);
             displayLed(usat, 0, 100, 0.2, 2);
             break;
 
         case USER_SYS_STEP_CLOSED_INT:
-
             if (np < points_low) {
                 reference = low_val;
-                xTaskNotify(h_publishStateTask, 0b0001, eSetBits);
+                //xTaskNotify(h_publishStateTask, 0b0001, eSetBits);
                 displayLed(y, 10, 90, 0.3, 0);
                 displayLed(reference, 10, 90, 0.3, 1);
                 displayLed(usat, 0, 100, 0.1, 2);
@@ -504,16 +539,14 @@ void  computeReference() {
             }
             else if (np <= total_time) {
                 reference = high_val;
-                xTaskNotify(h_publishStateTask, 0b0001, eSetBits);
+                //xTaskNotify(h_publishStateTask, 0b0001, eSetBits);
                 displayLed(y, 10, 90, 0.3, 0);
                 displayLed(reference, 10, 90, 0.3, 1);
                 displayLed(usat, 0, 100, 0.1, 2);
             }
             else if (np <= total_time + 1){
-
                 printf("Closed loop step response completed\n");
-                wattsToPlant(0);dispLeds.clear();
-                dispLeds.show();
+                reference = low_val;
                 defaultControl();
             }
             break;
@@ -525,56 +558,75 @@ void  computeReference() {
                 displayLed(y, 20, 90, 0.3, 1);
             }
             else if (np == total_time + 1) {
-                ledcWrite(PWM_CHANNEL, 0);
                 printf("Stairs closed loop response completed\n");
-                //typeControl = PID_CONTROLLER;
-                //codeTopic = DEFAULT_TOPIC;
                 ledcWrite(PWM_CHANNEL, 0 * percent2pwm);
-                dispLeds.clear();
-                dispLeds.show();
-                vTaskSuspend(h_controlPidTask);
-                vTaskSuspend(h_generalControlTask);
+                reference = DEFAULT_REFERENCE;
+                defaultControl();
             }
             break;
+       case USER_SYS_PROFILE_CLOSED_INT:
+           if (np <= total_time) {
+               reference = linearInterpolation(timeValues, stairs, points_stairs, np);
+               displayLed(y, low_val, high_val, 0, 6);
 
+           }
+           else if (np == total_time + 1) {
+               printf("Closed loop profile response completed\n");
+               wattsToPlant(0);
+               defaultControl();
+           }
+           break;
     }
 
 }
 
-float computeController(float ref, float y){
+float computeController(bool type){
     /* This function computes a general controlller for the thermal system
        The controller is defined by the state equation
            x[n+1] = (A - L * C) * x[k] + (B - L * D) * [r[n] y[n]]^T + L *u[n]
        where A, B, C ,D are the state equation matrices and L is the observer's gain for antiwindup,
        r[n] and y[n] are, respectively, the current reference and the current temperature
        of the thermal system
+
     */
+
+    static float X[10] = {0};
+    float Xnew[10] = {0};
     static float control = 0;
-    static float X[10];
-    float Xnew[10];
-    if (np==1) {
-        for (unsigned int i = 0; i < order; i++){
+    float e;
+    if (reset_int) {
+        for (size_t  i = 0; i < order; i++){
             X[i] = 0;
         }
         control = 0;
+        return 0;
     }
-    for (size_t i = 0; i < order; i++ ){
-        for (size_t j = 0; j < order; j++ ){
-            Xnew[i] +=  A[i][j] * X[j];
+    else {
+        e = reference - y;
+        for (size_t i = 0; i < order; i++) {
+            for (size_t j = 0; j < order; j++) {
+                Xnew[i] += A[i][j] * X[j];
+            }
+            if (type) {
+                Xnew[i] += B[i][0] * reference + B[i][1] * y + L[i] * control;
+            }
+            else{
+                Xnew[i] += B[i][0] * e + L[i] * control;
+            }
         }
-        Xnew[i] +=  B[i][0] * ref + B[i][1] * y + L[i] * control;
 
 
+        control = D[0] * reference + D[1] * y;
+        for (size_t i = 0; i < order; i++) {
+            control += C[i] * X[i];
+        }
+        for (size_t i = 0; i < order; i++) {
+            X[i] = Xnew[i];
+        }
+        control = constrain(control, 0, 100);
+        return control;
     }
-    control = D[0] * ref + D[1] * y;
-    for (size_t i = 0; i < order; i++ ){
-        control +=  C[i]*X[i];
-    }
-    for (unsigned int i = 0; i < order; i++ ){
-        X[i] = Xnew[i];
-    }
-    control = constrain(control, 0, 100);
-    return control;
+
 }
 
 
@@ -599,8 +651,6 @@ static void controlPidTask(void *pvParameters) {
             reset_int = false;
             continue;
         }
-
-        sensors.requestTemperatures();
         y = sensors.getTempCByIndex(0);
         computeReference();
 
@@ -619,8 +669,9 @@ static void controlPidTask(void *pvParameters) {
         wattsToPlant(usat); // Enviar señal de control en bits
         IA = IA + bi *(reference - y) + br*(usat - u);  // calculo de la accion integral
         y_ant = y;
-//        if (reset_int) {I=0;}
-        vTaskDelayUntil(&xLastWakeTime, taskPeriod);
+        sensors.requestTemperatures();
+        xTaskNotify(h_publishStateTask, 0b0001, eSetBits);
+        xTaskDelayUntil(&xLastWakeTime, taskPeriod);
         np+=1;
     }
 }
@@ -629,32 +680,46 @@ static void controlPidTask(void *pvParameters) {
 
 static void generalControlTask(void *pvParameters) {
     // Set the sampling time for the task at 750ms
-    static bool led_status = false;
     const TickType_t taskPeriod = (pdMS_TO_TICKS(1000*h));
-    TickType_t xLastWakeTime = xTaskGetTickCount();
-
-
-
+    TickType_t xLastWakeTime;
     for (;;) {
-        led_status = !led_status;
 
-        computeReference();
-        sensors.requestTemperatures();
+        xLastWakeTime = xTaskGetTickCount();
+        if (reset_int) {
+            computeController(false);
+            reset_int = false;
+            np = 0;
+            continue;
+        }
+
+
         y = sensors.getTempCByIndex(0);
+        computeReference();
+
 
         //This is to protect the system in case of sensor failure or overtemperature.
 
         if (y <= 0 || y >= 100) {
-            ledcWrite(PWM_CHANNEL, 0 * percent2pwm);
+            wattsToPlant(0);
             vTaskSuspend(nullptr);
         }
-        u = computeController(reference , y);
+
+        if (typeControl == GENERAL_CONTROLLER_1P){
+            u = computeController(false);
+        }
+        else if (typeControl == GENERAL_CONTROLLER_2P) {
+            u = computeController( true);
+        }
         usat = constrain(u, 0, 100);
-        ledcWrite(PWM_CHANNEL, usat * percent2pwm); // Enviar señal de control en bits
+        wattsToPlant( usat);
+        //printf("elapsed =%d\n", xTaskGetTickCount() - inicio);
+        sensors.requestTemperatures();
         xTaskNotify(h_publishStateTask, 0b0001, eSetBits);
-        vTaskDelayUntil(&xLastWakeTime, taskPeriod);
+        xTaskDelayUntil(&xLastWakeTime, taskPeriod);
+        np +=1;
     }
 }
+
 
 
 
@@ -690,7 +755,7 @@ static void identifyTask(void *pvParameters) {
             continue;
         }
 
-        sensors.requestTemperatures();
+
         y = sensors.getTempCByIndex(0);
 
         if (np < stab_points) {
@@ -735,11 +800,11 @@ static void identifyTask(void *pvParameters) {
             defaultControl();
         }
         xTaskNotify(h_publishStateTask, 0b0010, eSetBits);
+        sensors.requestTemperatures();
         vTaskDelayUntil(&xLastWakeTime, taskPeriod);
         np += 1;
     }
 }
-
 
 
 static void publishStateTask (void *pvParameters) {
@@ -758,36 +823,36 @@ static void publishStateTask (void *pvParameters) {
 
 
 
-void gotButtPlus() {
-    plusDetected = true;
-}
-
-void gotButtMinus() {
-    minusDetected = true;
-}
-
-
-
-static void menuTask(void *pvParameters) {
-    // Set the sampling time for the task at 750ms
-    for (;;) {
-        if (plusDetected) {
-            plusDetected = false;
-            if (touchInterruptGetLastStatus(BUTTON_PLUS)) {
-               reference = constrain(reference + 5,15,90);
-            }
-        }
-        if (minusDetected) {
-            minusDetected = false;
-            if (touchInterruptGetLastStatus(BUTTON_MINUS)) {
-                reference = constrain(reference - 5,15,90);
-            }
-        }
-       // printf("reference=%f       y=%f\n", reference, y);
-        vTaskDelay(1000);
-
-    }
-}
+//void gotButtPlus() {
+//    plusDetected = true;
+//}
+//
+//void gotButtMinus() {
+//    minusDetected = true;
+//}
+//
+//
+//
+//static void menuTask(void *pvParameters) {
+//    // Set the sampling time for the task at 750ms
+//    for (;;) {
+//        if (plusDetected) {
+//            plusDetected = false;
+//            if (touchInterruptGetLastStatus(BUTTON_PLUS)) {
+//               reference = constrain(reference + 5,15,90);
+//            }
+//        }
+//        if (minusDetected) {
+//            minusDetected = false;
+//            if (touchInterruptGetLastStatus(BUTTON_MINUS)) {
+//                reference = constrain(reference - 5,15,90);
+//            }
+//        }
+//       // printf("reference=%f       y=%f\n", reference, y);
+//        vTaskDelay(1000);
+//
+//    }
+//}
 
 
 void handleConnections(void *pvParameters) {
@@ -873,20 +938,20 @@ void setup() {
     );
     vTaskSuspend(h_identifyTask);
 
-    /**  These functions activate the menu */
-    xTaskCreatePinnedToCore(
-            menuTask,
-            "prbs-ident",
-            2048,
-            NULL,
-            10,
-            &h_menuTask,
-            CORE_COMM
-    );
-
-
-    touchAttachInterrupt(BUTTON_PLUS, gotButtPlus, THRESHOLD_PLUS);
-    touchAttachInterrupt(BUTTON_MINUS, gotButtMinus, THRESHOLD_MINUS);
+//    /**  These functions activate the menu */
+//    xTaskCreatePinnedToCore(
+//            menuTask,
+//            "prbs-ident",
+//            2048,
+//            NULL,
+//            10,
+//            &h_menuTask,
+//            CORE_COMM
+//    );
+//
+//
+//    touchAttachInterrupt(BUTTON_PLUS, gotButtPlus, THRESHOLD_PLUS);
+//    touchAttachInterrupt(BUTTON_MINUS, gotButtMinus, THRESHOLD_MINUS);
 
 
     /**  These functions activate communication */

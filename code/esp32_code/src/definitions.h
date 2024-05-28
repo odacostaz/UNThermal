@@ -22,8 +22,9 @@
 #define ONE_WIRE_BUS      1//  4
 
 // System definitions
-#define DEFAULT_REFERENCE 15
-#define SAMPLING_TIME 1
+#define DEFAULT_REFERENCE  15
+#define SAMPLING_TIME      0.8
+#define MAX_ORDER          10
 
 
 // IOT topic definitions
@@ -39,25 +40,38 @@
 #define USER_SYS_STEP_OPEN         "/thermal/user/thermal_" PLANT_NUMBER "/step_open"           //6
 #define USER_SYS_STEP_OPEN         "/thermal/user/thermal_" PLANT_NUMBER "/step_open"           //6
 #define USER_SYS_SET_GENCON        "/thermal/user/thermal_" PLANT_NUMBER "/set_gencon"          //7
+#define USER_SYS_PROFILE_CLOSED    "/thermal/user/thermal_" PLANT_NUMBER "/prof_closed"
 
-// Integer definitions of topics to avoid comparison with strings, which is more expensive
-// in terms of computation
+// Integer definitions of topics to avoid comparison with strings, which is more computationally expensive
+
+
+
 #define DEFAULT_TOPIC                  0
-#define USER_SYS_SET_PID_INT           1
-#define USER_SYS_SET_REF_INT           2
-#define USER_SYS_STEP_CLOSED_INT       3
-#define USER_SYS_STAIRS_CLOSED_INT     4
-#define USER_SYS_PRBS_OPEN_INT         5
-#define USER_SYS_STEP_OPEN_INT         6
-#define USER_SYS_SET_GENCON_INT        7
+#define USER_SYS_STEP_CLOSED_INT       1
+#define USER_SYS_STAIRS_CLOSED_INT     2
+#define USER_SYS_PRBS_OPEN_INT         3
+#define USER_SYS_STEP_OPEN_INT         4
+#define USER_SYS_PROFILE_CLOSED_INT    5
+
+
+
+
 
 // Codes for modes of control
-#define GENERAL_CONTROLLER             0
-#define PID_CONTROLLER                 1
 
-/* This matrix is the gamma correction for the leds attached to the plant, which allow to "see" the current
-   temperature and the current reference
-*/
+#define GENERAL_CONTROLLER_1P          0
+#define GENERAL_CONTROLLER_2P          1
+#define PID_CONTROLLER                 2
+
+// Maximum order for the controler
+
+
+
+/**********************************************************************************************************
+ * This matrix is the gamma correction for the leds attached to the plant, which allow to "see" the current
+*   temperature and the current reference
+**********************************************************************************************************/
+
 const uint8_t gamma8[] = {
         0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
         0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,  1,
