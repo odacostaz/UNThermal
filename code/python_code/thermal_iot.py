@@ -32,6 +32,7 @@ codes ={"SYS_USER_SIGNALS_CLOSED"  : "/thermal/thermal_" + PLANT_NUMBER + "/user
         "USER_SYS_PRBS_OPEN": "/thermal/user/thermal_" + PLANT_NUMBER + "/prbs_open",
         "USER_SYS_STEP_OPEN": "/thermal/user/thermal_" + PLANT_NUMBER + "/step_open",
         "USER_SYS_SET_GENCON": "/thermal/user/thermal_" + PLANT_NUMBER + "/set_gencon",
+        "USER_SYS_PROFILE_CLOSED": "/thermal/user/thermal_" + PLANT_NUMBER + "/prof_closed",
         "THERMAL_SAMPLING_TIME" : 0.8
         }
 
@@ -86,6 +87,8 @@ class ThermalSystemIoT:
     def publish(self, topic, message, qos=2):
         self.client.publish(topic, message, qos)
 
+
+
     def transfer_function(self, temperature=50):
         Kp = -0.0025901782151786 * temperature + 0.987094648761147
         Tao = -0.0973494029141449 * temperature + 66.5927276606595
@@ -129,6 +132,12 @@ def matrix2hex(matrix):
             hstring += float2hex(element)
     return hstring
 
+
+def time2hex(time_points):
+    hstring = ""
+    for t in time_points:
+        hstring += long2hex(t)
+    return hstring
 
 def set_reference(system, ref_value=50):
     ref_hex = float2hex(ref_value)
@@ -449,7 +458,6 @@ def set_controller(system, controller):
     D_hex = matrix2hex(Dc)
     L_hex = matrix2hex(L)
     order_hex = long2hex(order)
-    deadzone_hex = float2hex(deadzone)
     type_control_hex = long2hex(type_control)
     message = json.dumps({"order": order_hex,
                           "A": A_hex,
@@ -458,13 +466,155 @@ def set_controller(system, controller):
                           "D": D_hex,
                           "L": L_hex,
                           "typeControl": type_control_hex,
-                          "deadzone": deadzone_hex
                           })
 
     system.connect()
     system.publish(topic_pub, message)
     system.disconnect()
     return
+
+
+def profile_closed(system, timevalues = [0, 50, 100 , 150], refvalues = [40, 50, 60, 70], filepath=PATH+"Thermal_profile_closed_exp.csv"):
+    def profile_message(system, userdata, message):
+        # This is the callback for receiving messages from the plant
+        q.put(message)
+
+    # reading the configuration parameters from the code's field in the plant
+
+    topic_pub = system.codes["USER_SYS_PROFILE_CLOSED"]
+    topic_sub = system.codes["SYS_USER_SIGNALS_CLOSED"]
+    sampling_time = system.codes["THERMAL_SAMPLING_TIME"]
+
+
+    # setting the parameters of the step response for sending to ESP32
+
+    int_timevalues = [round(p/sampling_time) for p in timevalues]
+    if int_timevalues[0] != 0:
+        int_timevalues.insert(0, int_timevalues[0]-1)
+        int_timevalues.insert(0,0)
+        refvalues.insert(0,0)
+        refvalues.insert(0,0)
+
+
+    int_timevalues_hex = time2hex(int_timevalues)
+    refvalues_hex = signal2hex(refvalues)
+    points = len(int_timevalues)
+    points_hex = long2hex(points)
+
+    # user's command for obtaining the profile
+    # al values are transmitted in hexadecimal
+    min_val = np.min(refvalues)
+    max_val = np.max(refvalues)
+    min_val_hex = float2hex(min_val)
+    max_val_hex = float2hex(max_val)
+
+    message = json.dumps({"timevalues":  int_timevalues_hex,
+                          "refvalues":   refvalues_hex,
+                          "points":      points_hex,
+                          "min_val":     min_val_hex,
+                          "max_val":     max_val_hex,
+                          })
+
+    # setting the callback fro receiving data from the ESP32 for obtaining the profile response
+    system.client.on_message = profile_message
+
+    # connecting the system
+    system.connect()
+
+    # subscribing to topic published by ESP32
+    system.subscribe(topic_sub)
+
+    # command sent to ESP32 for obtaining the profile response
+    system.publish(topic_pub, message)
+
+    # setting the total of points and the total of frames
+    total_points = int_timevalues[-1]
+
+    q = Queue()
+    y = []
+    r = []
+    u = []
+    t = []
+
+
+    # Setting the graphics configuration for visualizing the experiment
+    fig, (ay, au) = plt.subplots(nrows=2, ncols=1, width_ratios = [1], height_ratios= [4,1], figsize=(16, 9))
+    fig.set_facecolor('#b7c4c8f0')
+
+    # settings for the upper axes, depicting the model and speed data
+    ay.set_title(f'Profile response experiment with a duration of {timevalues[-1]:0.2f} seconds and {len(timevalues):d} edges')
+    ay.set_ylabel('')
+    ay.grid(True);
+    ay.grid(color='#806600ff', linestyle='--', linewidth=0.25)
+    ay.set_facecolor('#f4eed7ff')
+    ay.set_xlim(0, timevalues[-1])
+
+    #Setting the limits of figure
+    ylimits = [np.min(refvalues) - 5, np.max(refvalues) + 5]
+    ay.set_ylim(ylimits[0], ylimits[1])
+
+    au.set_facecolor('#d7f4e3ff')
+    au.set_ylim(0, 100)
+    au.set_xlim(0, timevalues[-1])
+    au.grid(color='#008066ff', linestyle='--', linewidth=0.25)
+
+
+    line_r, = ay.plot(t, r, color="#008066ff", linewidth=1.25)
+    line_y, = ay.plot(t, y, color="#ff0066ff")
+    line_u, = au.plot(t, u, color="#0066ffff")
+
+
+
+    box = dict(boxstyle='round,pad=0.5', facecolor='white', edgecolor='white', alpha=0.75)
+    # y_txt = ay.text( t0 + t1- 3, ylimits[0] + 1 , 'Temperature:\n ', fontsize=15, color="#ff6680",ha='right', va='bottom', bbox=box)
+    # u_txt = au.text(t0 + t1 - 3 , 15, f'Input:', fontsize=15, color="#0066ffB0",ha='right', va='bottom', bbox=box)
+
+
+    exp = []
+    n = -1
+    sync = False
+
+    while n < total_points:
+        try:
+            message = q.get(True, 20 * sampling_time)
+        except:
+            raise TimeoutError("The connection has been lost. Please try again")
+
+        decoded_message = str(message.payload.decode("utf-8"))
+        msg_dict = json.loads(decoded_message)
+        n_hex = str(msg_dict["np"])
+        n = hex2long(n_hex)
+        print(n)
+        if n == 0:
+            sync = True
+        if sync == True:
+            t_curr = n * sampling_time
+            t.append(t_curr)
+            y_curr = hex2float(msg_dict["y"])
+            y.append(y_curr)
+            r_curr = hex2float(msg_dict["r"])
+            r.append(r_curr)
+            u_curr = hex2float(msg_dict["u"])
+            u.append(u_curr)
+            line_r.set_data(t, r)
+            line_y.set_data(t, y)
+            line_u.set_data(t, u)
+            ay.legend([line_r, line_y], [f'$r(t):$ {r_curr:0.2f}', f'$y(t):$ {y_curr: 0.3f}$~^oC$'], fontsize=16, loc="upper left")
+            au.legend([line_u], [f'$u(t):$ {u_curr: 0.1f}'], fontsize=16)
+            exp.append([t_curr, r_curr, y_curr, u_curr])
+            plt.draw()
+            plt.pause(sampling_time)
+    ay.legend([line_r, line_y], ['$r(t)$ (reference)', '$y_R(t)$ (real output)'], fontsize=16,
+              loc="upper left")
+    au.legend([line_u], ['$u(t)$ (control signal)'], fontsize=14)
+
+    PATH1 = r'/home/leonardo/sharefolder/ProyectoSabatico/Reporte/figures/'
+    plt.savefig(PATH1 + "Thermal_profile_response.svg", bbox_inches='tight')
+    plt.show()
+    np.savetxt(filepath, exp, delimiter=",", fmt="%0.8f", comments="", header='t,r,y,u')
+    system.disconnect()
+    print("Step response completed")
+    return t, r, y, u
 
 
 
@@ -477,7 +627,6 @@ def set_controller(system, controller):
 
 if __name__ == "__main__":
     plant = ThermalSystemIoT()
-    print(plant.transfer_function(80))
     set_pid(plant, kp=16.796, ki=2, kd=16.441, N=27.38, beta=0.5)
     t,  r, y, u = step_closed(plant, 40, 60, 30, 30)
     #signal = [30, 40, 50, 60, 70, 80]
