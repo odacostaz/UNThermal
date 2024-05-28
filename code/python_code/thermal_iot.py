@@ -397,6 +397,7 @@ def set_controller(system, controller):
         con2 = ct.tf(ct.tf(controller.num[0][1], controller.den[0][1]))
         N1, D1 = ct.tfdata(con1)
         N2, D2 = ct.tfdata(con2)
+
         N1 = N1[0][0]
         D1 = D1[0][0]
         N1 = N1 / D1[0]
@@ -405,6 +406,8 @@ def set_controller(system, controller):
         D2 = D2[0][0]
         N2 = N2 / D2[0]
         D2 = D2/ D2[0]
+        print(N1, D1)
+        print(N2, D2)
 
         if len(N1) == len(D1):
             d1 = N1[0]
@@ -432,6 +435,7 @@ def set_controller(system, controller):
         Bcon = np.block([B1,B2])
         Ccon = np.append([1], ZR)
         Dcon = np.block([d1, d2])
+
 
     Ad, Bd, Cd, Dd, dt = cont2discrete((Acon, Bcon, Ccon, Dcon), sampling_time, method='bilinear')
     Cve = ct.ss(Ad, Bd, Cd, Dd)

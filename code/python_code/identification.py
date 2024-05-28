@@ -577,69 +577,6 @@ def step_open(system, op_point=50, amplitude=5, high_time=200, stab_time=150, ue
     return tt, ut, yt
 
 
-    #
-    #
-    #
-    # fig, ax = plt.subplots()
-    # line_y, = ax.plot(t, y, color="#ffcc00")
-    # line_u, = ax.plot(t, u, color="#00d4aa")
-    # line_yt, = ax.plot(t, yt, color="#d40055")
-    # line_ut, = ax.plot(t, ut, color="#338000")
-    #
-    # m = 1.23
-    # b = -24.75
-    # uf_est = m * op_point + b
-    # points = stab_points + uee_points + points_high
-    # ymax = (uf_est + amplitude - m) / b
-    # ax.set_xlim(0, sampling_time * points)
-    # ax.set_ylim(0, 70)
-    # plt.grid()
-    # npc = 1
-    # while npc <= points:
-    #     try:
-    #         message = q.get(True, 20 * sampling_time)
-    #     except:
-    #         raise TimeoutError("The connection has been lost. Please try again")
-    #
-    #     decoded_message = str(message.payload.decode("utf-8"))
-    #     msg_dict = json.loads(decoded_message)
-    #     np_hex = str(msg_dict["np"])
-    #     np = hex2long(np_hex)
-    #     print(points, npc, np, hex2float(msg_dict["u"]), hex2float(msg_dict["y"]))
-    #     if np == npc:
-    #         if npc <= stab_points + uee_points:
-    #             t_curr = (np - 1) * sampling_time
-    #             t.append(t_curr)
-    #             y_curr = hex2float(msg_dict["y"])
-    #             y.append(y_curr)
-    #             u_curr = hex2float(msg_dict["u"])
-    #             u.append(u_curr)
-    #             line_y.set_data(t, y)
-    #             line_u.set_data(t, u)
-    #
-    #         else:
-    #             tt_curr = (np - 1) * sampling_time
-    #             if npc <= stab_points + uee_points + 1:
-    #                 t0 = tt_curr
-    #             tt.append(tt_curr)
-    #             yt_curr = hex2float(msg_dict["y"])
-    #             yt.append(yt_curr)
-    #             ut_curr = hex2float(msg_dict["u"])
-    #             ut.append(ut_curr)
-    #             exp.append([tt_curr - t0, ut_curr, yt_curr])
-    #             line_yt.set_data(tt, yt)
-    #             line_ut.set_data(tt, ut)
-    #             line_y.set_data(t, y)
-    #             line_u.set_data(t, u)
-    #         plt.draw()
-    #         plt.pause(0.1)
-    #         npc += 1
-    # np.savetxt(filepath, exp, delimiter=",",
-    #             fmt="%0.8f", comments="", header='t,u,y')
-    # system.disconnect()
-    # plt.show()
-    # return t, u, y
-
 
 def read_fo_model():
     with open(PATH + 'Thermal_fo_model_pbrs.csv', newline='') as file:
@@ -661,10 +598,12 @@ def read_fo_model():
 
 if __name__ == "__main__":
     plant = ThermalSystemIoT()
-    step_open(plant, op_point=50, amplitude=5, high_time=1500, stab_time=90, uee_time=10,
-              filepath="step_open_exp.csv")
-    #get_static_model(plant, step=2.5)
-   # pbrs_open(plant, op_point=50, peak_amp=4, stab_time=60, uee_time=10, divider=35, filepath=PATH + "thermal_prbs_open_exp.csv")
-   # x = fotd_system_identification(filename='prbs_open_exp.csv')
-   # print(x)
+    get_models_prbs(system, yop=70, peak_amp=4, usefile=True):
+
+   #  step_open(plant, op_point=50, amplitude=5, high_time=1500, stab_time=90, uee_time=10,
+   #            filepath="step_open_exp.csv")
+   #  #get_static_model(plant, step=2.5)
+   # prbs_open(plant, op_point=50, peak_amp=4, stab_time=60, uee_time=10, divider=35, filepath=PATH + "thermal_prbs_open_exp.csv")
+   # # x = fotd_system_identification(filename='prbs_open_exp.csv')
+   # # print(x)
 
