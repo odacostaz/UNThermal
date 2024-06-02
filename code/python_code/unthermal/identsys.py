@@ -1,23 +1,32 @@
-import matplotlib
-matplotlib.use("TkAgg", force=True)
-import numpy as np
+# import matplotlib
+# matplotlib.use("TkAgg", force=True)
 import matplotlib.pyplot as plt
+import numpy as np
 from scipy.integrate import odeint
 from scipy.optimize import minimize
 from scipy.interpolate import interp1d
 from scipy.stats import linregress
-import pandas as pd
 import control as ct
-from thermal_iot import ThermalSystemIoT, PATH, long2hex, float2hex, hex2long, set_pid, hex2float
+from .thermalsys import ThermalSystemIoT, PATH_DATA, PATH_DEFAULT
+from .controlsys import  long2hex, float2hex, hex2long, set_pid, hex2float
 import json
 from math import ceil
 from queue import Queue
 from pathlib import Path
 import csv
+from pathlib import Path
 
 
-def read_csv_file3(filepath=PATH + 'DCmotor_prbs_open_exp.csv'):
-    with open(filepath , newline='') as file:
+# import matplotlib
+# matplotlib.use("TkAgg", force=True)
+
+
+
+
+
+
+def read_csv_file3():
+    with open(PATH_DATA + 'Thermal_prbs_open_exp.csv', newline='') as file:
         reader = csv.reader(file)
         # Iterate over each row in the CSV file
         num_line = 0
@@ -72,7 +81,7 @@ def step_closed_staticgain(system,r0=0,r1=40,t0=0,t1=40):
     ax = plt.gca()
     line_y, = ax.plot(t, y, linestyle = 'solid', color="#0044AA60", linewidth=1)
     line_u, = ax.plot(t, u, linestyle='solid', color="#ff000060", linewidth=1)
-    ax.legend([line_y, line_u], [r'Temperature $(~^o C)$', 'Power input ($\%$ of 2.475W)'], fontsize=16 , loc = "lower right")
+    ax.legend([line_y, line_u], [r'Temperature $(~^o C)$', r'Power input ($\%$ of 2.475W)'], fontsize=16 , loc = "lower right")
     points = points_high + points_low
     n = 0
     sync = False
@@ -126,7 +135,7 @@ def get_static_model(system, step = 5):
     ax.set_ylim(0, 100)
     exp = []
     y_test = np.arange(30,100, step)
-    Path(PATH).mkdir(exist_ok=True)
+
 
     for yi in y_test:
         u, y = step_closed_staticgain(system, r0=0, r1=yi, t0=0, t1=60)
@@ -138,8 +147,11 @@ def get_static_model(system, step = 5):
         line_exp.set_data(uee, yee)
         plt.draw()
         plt.pause(0.1)
-        np.savetxt(PATH + "Thermal_static_gain_response.csv", exp, delimiter=",", fmt="%0.8f", comments="",
-                   header='u,t')
+
+    np.savetxt(PATH_DEFAULT + "Thermal_static_gain_response.csv", exp, delimiter=",", fmt="%0.8f", comments="",
+               header='u,t')
+    np.savetxt(PATH_DATA + "Thermal_static_gain_response.csv", exp, delimiter=",", fmt="%0.8f", comments="",
+               header='u,t')
 
     res = linregress(uee, yee, alternative='greater')
     m = res.slope
@@ -156,7 +168,7 @@ def get_static_model(system, step = 5):
 
 
 
-def prbs_open(system, op_point=50, peak_amp=4, stab_time=60, uee_time=10, divider=30, filepath = "prbs_open_exp.csv"):
+def prbs_open(system, op_point=50, peak_amp=4, stab_time=60, uee_time=10, divider=30):
     def pbrs_message(system, userdata, message):
         q.put(message)
 
@@ -198,7 +210,6 @@ def prbs_open(system, op_point=50, peak_amp=4, stab_time=60, uee_time=10, divide
     ymin = op_point - m*peak_amp - 2
     umax = uf_est + (1 + percent) * peak_amp
     umin =  np.min([0, uf_est - (1 + percent) * peak_amp - 5.0])
-
     fig, (yax, uax) = plt.subplots(nrows=2, ncols=1, width_ratios=[1], height_ratios=[2, 1], figsize=(16, 9))
     fig.set_facecolor('#b7c4c8f0')
     yax.set_title(f'PRBS identification with {points:d} samples and a duration of {points * sampling_time: 0.2f} seconds')
@@ -274,14 +285,13 @@ def prbs_open(system, op_point=50, peak_amp=4, stab_time=60, uee_time=10, divide
                 txt1.set_text( f'Current Temperature: {yt_curr: 0.2f}$~^oC$')
                 txt2.set_text( f'Current Input: {ut_curr:0.2f}% ({0.02475*ut_curr:0.2f} W)')
                 exp.append([tt_curr-t0, ut_curr, yt_curr])
-                np.savetxt(filepath, exp, delimiter=",",
-                           fmt="%0.8f", comments="", header='t,u,y')
+
             plt.draw()
             plt.pause(0.1)
-    # PATH1 = r'/home/leonardo/sharefolder/ProyectoSabatico/Reporte/figures/'
-    # plt.savefig(PATH1 + "Thermal_pbrs.svg", format="svg", bbox_inches="tight")
+
+    np.savetxt(PATH_DEFAULT + "prbs_open_exp.csv", exp, delimiter=",", fmt="%0.8f", comments="", header='t,u,y')
+    np.savetxt(PATH_DATA + "prbs_open_exp.csv", exp, delimiter=",", fmt="%0.8f", comments="", header='t,u,y')
     system.disconnect()
-    plt.show()
     return tt, ut, yt
 
 
@@ -338,13 +348,11 @@ def get_models_prbs(system, yop = 50, peak_amp= 4, usefile = True):
          raise ValueError(f"The maximum temperature for this system is 100 degrees celsius")
 
     if usefile:
-        t,u,y = read_csv_file3(filepath = PATH + 'Thermal_prbs_open_exp.csv')
+        t, u, y = read_csv_file3()
     else:
-        t, u, y =  prbs_open(system, op_point=yop, peak_amp= peak_amp, stab_time=60, uee_time=10, divider=30, filepath = PATH + "Thermal_prbs_open_exp.csv")
-
+        t, u, y = prbs_open(system, op_point=yop, peak_amp=peak_amp, stab_time=60, uee_time=10, divider=30)
 
     m = 1.2341015052212259
-    Tenv = y[0] - m * u[0]
     ymean = np.mean(y)
     um = np.array(u) - u[0]
     ym = np.array(y) - ymean
@@ -434,22 +442,27 @@ def get_models_prbs(system, yop = 50, peak_amp= 4, usefile = True):
     ay.legend([line_exp, line_model1, line_model2], ['Data', modelstr1, modelstr2],
               fontsize=15, loc = 'lower left',framealpha=0.95)
     au.legend([line_u], ['PRBS Input'], fontsize=14)
-    PATH1 = r'/home/leonardo/sharefolder/ProyectoSabatico/Reporte/figures/'
-    plt.savefig(PATH1 + "Thermal_pbrs.svg", format="svg", bbox_inches="tight")
-    plt.show()
-    Path(PATH).mkdir(exist_ok=True)
+    # PATH1 = r'/home/leonardo/sharefolder/ProyectoSabatico/Reporte/figures/'
+    # plt.savefig(PATH1 + "Thermal_pbrs.svg", format="svg", bbox_inches="tight")
+
     fo_model = [[alpha, tau]]
     so_model = [[alpha2, tau1, tau2]]
-    np.savetxt(PATH + "Thermal_fo_model_pbrs.csv", fo_model, delimiter=",",
+    np.savetxt(PATH_DEFAULT + "Thermal_fo_model_pbrs.csv", fo_model, delimiter=",",
                fmt="%0.8f", comments="", header='alpha, tau')
 
-    np.savetxt(PATH + "Thermal_fotd_model_pbrs.csv", so_model, delimiter=",",
+    np.savetxt(PATH_DEFAULT + "Thermal_fotd_model_pbrs.csv", so_model, delimiter=",",
+               fmt="%0.8f", comments="", header='alpha2, tau1, tau2')
+    np.savetxt(PATH_DATA + "Thermal_fo_model_pbrs.csv", fo_model, delimiter=",",
+               fmt="%0.8f", comments="", header='alpha, tau')
+
+    np.savetxt(PATH_DATA + "Thermal_fotd_model_pbrs.csv", so_model, delimiter=",",
                fmt="%0.8f", comments="", header='alpha2, tau1, tau2')
 
     system.disconnect()
+    plt.show()
     return #G1, G2
 
-def step_open(system, op_point=50, amplitude=5, high_time=200, stab_time=150, uee_time=20, filepath = "step_open_exp.csv"):
+def step_open(system, op_point=50, amplitude=5, high_time=200, stab_time=150, uee_time=20):
     def step_message(system, userdata, message):
         q.put(message)
 
@@ -566,12 +579,13 @@ def step_open(system, op_point=50, amplitude=5, high_time=200, stab_time=150, ue
                 txt1.set_text( f'Current Temperature: {yt_curr: 0.2f}$~^oC$')
                 txt2.set_text( f'Current Input: {ut_curr:0.2f}% ({0.02475*ut_curr:0.2f} W)')
                 exp.append([tt_curr-t0, ut_curr, yt_curr])
-                np.savetxt(filepath, exp, delimiter=",",
-                           fmt="%0.8f", comments="", header='t,u,y')
+
             plt.draw()
             plt.pause(0.1)
     # PATH1 = r'/home/leonardo/sharefolder/ProyectoSabatico/Reporte/figures/'
     # plt.savefig(PATH1 + "Thermal_pbrs.svg", format="svg", bbox_inches="tight")
+    np.savetxt(PATH_DEFAULT, exp, delimiter=",",fmt="%0.8f", comments="", header='t,u,y')
+    np.savetxt(PATH_DATA, exp, delimiter=",",fmt="%0.8f", comments="", header='t,u,y')
     system.disconnect()
     plt.show()
     return tt, ut, yt
@@ -579,7 +593,7 @@ def step_open(system, op_point=50, amplitude=5, high_time=200, stab_time=150, ue
 
 
 def read_fo_model():
-    with open(PATH + 'Thermal_fo_model_pbrs.csv', newline='') as file:
+    with open(PATH_DATA + 'Thermal_fo_model_pbrs.csv', newline='') as file:
         reader = csv.reader(file)
         # Iterate over each row in the CSV file
         num_line = 0
@@ -598,12 +612,7 @@ def read_fo_model():
 
 if __name__ == "__main__":
     plant = ThermalSystemIoT()
-    get_models_prbs(system, yop=70, peak_amp=4, usefile=True):
+    get_models_prbs(plant, yop=55, peak_amp=4, usefile=False)
 
-   #  step_open(plant, op_point=50, amplitude=5, high_time=1500, stab_time=90, uee_time=10,
-   #            filepath="step_open_exp.csv")
-   #  #get_static_model(plant, step=2.5)
-   # prbs_open(plant, op_point=50, peak_amp=4, stab_time=60, uee_time=10, divider=35, filepath=PATH + "thermal_prbs_open_exp.csv")
-   # # x = fotd_system_identification(filename='prbs_open_exp.csv')
-   # # print(x)
+
 

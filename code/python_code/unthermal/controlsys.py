@@ -1,102 +1,16 @@
-# Required libraries
-import paho.mqtt.client as mqtt
+# import matplotlib
+# matplotlib.use("widget", force=True)
+import matplotlib.pyplot as plt
+import numpy as np
+from pathlib import Path
 import control as ct
 import struct
 from queue import Queue
-import math
+from math import ceil
 import json
-import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib
-from pathlib import Path
+
 from scipy.signal import cont2discrete
-matplotlib.use("TkAgg", force=True)
-
-# parameters of communication
-
-
-BROKER = "192.168.0.3"
-PORT = 1883
-USER = "hpdesktop"
-PASSWORD = "hpdesktop"
-
-#topics for subscribing
-
-PLANT_NUMBER = "1234"
-codes ={"SYS_USER_SIGNALS_CLOSED"  : "/thermal/thermal_" + PLANT_NUMBER + "/user/sig_closed",
-        "SYS_USER_SIGNALS_OPEN"  : "/thermal/thermal_" + PLANT_NUMBER + "/user/sig_open",
-        "USER_SYS_SET_REF"  : "/thermal/user/thermal_" + PLANT_NUMBER + "/set_ref",
-        "USER_SYS_SET_PID"  : "/thermal/user/thermal_" + PLANT_NUMBER  + "/set_pid",
-        "USER_SYS_STEP_CLOSED": "/thermal/user/thermal_" + PLANT_NUMBER +"/step_closed",
-        "USER_SYS_STAIRS_CLOSED": "/thermal/user/thermal_" + PLANT_NUMBER + "/stairs_closed",
-        "USER_SYS_PRBS_OPEN": "/thermal/user/thermal_" + PLANT_NUMBER + "/prbs_open",
-        "USER_SYS_STEP_OPEN": "/thermal/user/thermal_" + PLANT_NUMBER + "/step_open",
-        "USER_SYS_SET_GENCON": "/thermal/user/thermal_" + PLANT_NUMBER + "/set_gencon",
-        "USER_SYS_PROFILE_CLOSED": "/thermal/user/thermal_" + PLANT_NUMBER + "/prof_closed",
-        "THERMAL_SAMPLING_TIME" : 0.8
-        }
-
-
-PATH = r"./experiment_files/"
-
-class ThermalSystemIoT:
-
-    def __init__(self, broker_address = BROKER, port= PORT, client_id="", clean_session=True):
-        self.client = mqtt.Client()
-        self.broker_address = broker_address
-        self.port = port
-        self.client.on_connect = self.on_connect
-        self.client.on_disconnect = self.on_disconnect
-        self.client.on_message = self.on_message
-        self.client.on_subscribe = self.on_subscribe
-        self.client.on_publish = self.on_publish
-        self.codes = codes
-
-
-    def on_connect(self, client, userdata, flags, rc):
-        if rc == 0:
-            print("Connected successfully to MQTT Broker!")
-        else:
-            print("Failed to connect, return code %d\n", rc)
-
-    def on_disconnect(self, client, userdata, rc):
-        if rc != 0:
-            print("Unexpected disconnection.")
-
-    def on_message(self, client, userdata, message):
-        print(f"Received  '{message.payload.decode()}'")
-
-    def on_subscribe(self, client, userdata, mid, granted_qos):
-        print("Subscribed: ", mid, " ", granted_qos)
-
-    def on_publish(self, client, userdata, mid):
-        print("Message Published: ", mid)
-
-    def connect(self):
-        self.client.username_pw_set(USER, PASSWORD)
-        self.client.connect(self.broker_address, self.port)
-        self.client.loop_start()
-
-    def disconnect(self):
-        self.client.loop_stop()
-        self.client.disconnect()
-
-    def subscribe(self, topic, qos=2):
-        self.client.subscribe(topic, qos)
-
-    def publish(self, topic, message, qos=2):
-        self.client.publish(topic, message, qos)
-
-
-
-    def transfer_function(self, temperature=50):
-        Kp = -0.0025901782151786 * temperature + 0.987094648761147
-        Tao = -0.0973494029141449 * temperature + 66.5927276606595
-        delay = -0.00446863636363636 * temperature + 3.57201818181818
-        uN = 0.9719 * temperature - 24.7355
-        G = ct.TransferFunction(Kp, [Tao, 1])
-        return G, delay, uN
-
+from .thermalsys import ThermalSystemIoT, PATH_DATA, PATH_DEFAULT
 
 def float2hex(value):
     val_binary = struct.pack('>f', value)
@@ -171,11 +85,11 @@ def set_pid(system, kp=1, ki=0.4, kd=0, N=5, beta=1):
     return rcode
 
 
-def step_closed(system, r0=0 , r1=100, t0=0 ,  t1=1, filepath = PATH + "Thermal_step_closed_exp.csv"):
+def step_closed(system, r0=0 , r1=100, t0=0 ,  t1=1):
     def step_message(system, userdata, message):
         q.put(message)
 
-    Path(PATH).mkdir(exist_ok=True)
+
 
     low_val = r0
     high_val = r1
@@ -209,6 +123,7 @@ def step_closed(system, r0=0 , r1=100, t0=0 ,  t1=1, filepath = PATH + "Thermal_
 
 
     # Setting the graphics configuration for visualizing the experiment
+    plt.close("all")
     fig, (ay, au) = plt.subplots(nrows=2, ncols=1, width_ratios = [1], height_ratios= [4,1], figsize=(16, 9))
     fig.set_facecolor('#b7c4c8f0')
 
@@ -282,14 +197,15 @@ def step_closed(system, r0=0 , r1=100, t0=0 ,  t1=1, filepath = PATH + "Thermal_
             plt.pause(sampling_time)
 
 
-    plt.show()
-    np.savetxt(filepath, exp, delimiter=",", fmt="%0.8f", comments="", header='t,r,y,u')
+    #plt.savefig(PATH_DATA + "result.png", bbox_inches="tight")
+    # plt.imshow(PATH_DATA + "result.png")
+    np.savetxt(PATH_DEFAULT + "Thermal_step_closed_exp.csv",  exp, delimiter=",", fmt="%0.8f", comments="", header='t,r,y,u')
+    np.savetxt(PATH_DATA + "Thermal_step_closed_exp.csv",  exp, delimiter=",", fmt="%0.8f", comments="", header='t,r,y,u')
     system.disconnect()
-    print("Step response completed")
     return t, r, y, u
 
 
-def stair_closed(system, stairs=[40, 50, 60], duration=100, filepath = "stair_closed_exp.csv"):
+def stairs_closed(system, stairs=[40, 50, 60], duration=100):
     def usersignal_message(system, userdata, message):
         q.put(message)
 
@@ -314,6 +230,7 @@ def stair_closed(system, stairs=[40, 50, 60], duration=100, filepath = "stair_cl
     t = []
     u = []
     exp = []
+    plt.close("all")
     fig, ax = plt.subplots()
     line_r, = ax.plot(t, r, 'b-')
     line_y, = ax.plot(t, y, 'r-')
@@ -347,8 +264,10 @@ def stair_closed(system, stairs=[40, 50, 60], duration=100, filepath = "stair_cl
             plt.draw()
             plt.pause(0.1)
             npc += 1
-    npy.savetxt(filepath, exp, delimiter=",",
-                fmt="%0.8f", comments="", header='t,r,y,u')
+
+
+    npy.savetxt(PATH_DEFAULT + "Thermal_stairs_closed_exp.csv", exp, delimiter=",", fmt="%0.8f", comments="", header='t,r,y,u')
+    npy.savetxt(PATH_DATA + "Thermal_stairs_closed_exp.csv", exp, delimiter=",", fmt="%0.8f", comments="", header='t,r,y,u')
     system.disconnect()
     plt.show()
     return t, y, r, u
@@ -478,7 +397,7 @@ def set_controller(system, controller):
     return
 
 
-def profile_closed(system, timevalues = [0, 50, 100 , 150], refvalues = [40, 50, 60, 70], filepath=PATH+"Thermal_profile_closed_exp.csv"):
+def profile_closed(system, timevalues = [0, 50, 100 , 150], refvalues = [40, 50, 60, 70]):
     def profile_message(system, userdata, message):
         # This is the callback for receiving messages from the plant
         q.put(message)
@@ -542,6 +461,7 @@ def profile_closed(system, timevalues = [0, 50, 100 , 150], refvalues = [40, 50,
 
 
     # Setting the graphics configuration for visualizing the experiment
+    plt.close("all")
     fig, (ay, au) = plt.subplots(nrows=2, ncols=1, width_ratios = [1], height_ratios= [4,1], figsize=(16, 9))
     fig.set_facecolor('#b7c4c8f0')
 
@@ -612,12 +532,14 @@ def profile_closed(system, timevalues = [0, 50, 100 , 150], refvalues = [40, 50,
               loc="upper left")
     au.legend([line_u], ['$u(t)$ (control signal)'], fontsize=14)
 
-    PATH1 = r'/home/leonardo/sharefolder/ProyectoSabatico/Reporte/figures/'
-    plt.savefig(PATH1 + "Thermal_profile_response.svg", bbox_inches='tight')
+
+
+    np.savetxt(PATH_DEFAULT + "Thermal_profile_closed_exp.csv", exp, delimiter=",", fmt="%0.8f",
+               comments="", header='t,r,y,u')
+    np.savetxt(PATH_DATA + "Thermal_profile_closed_exp.csv", exp, delimiter=",", fmt="%0.8f",
+               comments="", header='t,r,y,u')
     plt.show()
-    np.savetxt(filepath, exp, delimiter=",", fmt="%0.8f", comments="", header='t,r,y,u')
     system.disconnect()
-    print("Step response completed")
     return t, r, y, u
 
 
