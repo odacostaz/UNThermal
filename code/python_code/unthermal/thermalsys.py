@@ -18,7 +18,7 @@ from scipy.signal import cont2discrete
 # parameters of communication
 
 
-BROKER = "18.204.70.207" # "192.168.0.3"
+BROKER = "192.168.0.3" # "18.204.70.207" # "192.168.0.3"
 PORT = 1883
 USER = "hpdesktop"
 PASSWORD = "hpdesktop"
