@@ -42,6 +42,8 @@ codes ={"SYS_USER_SIGNALS_CLOSED"  : "/thermal/thermal_" + PLANT_NUMBER + "/user
 
 PATH_DEFAULT = r"./experiment_files/"
 PATH_DATA = str(Path(__file__).parent) + r"/datafiles/"
+FONT_SIZE = 10
+
 Path(PATH_DEFAULT).mkdir(exist_ok=True)
 
 class ThermalSystemIoT:
@@ -60,7 +62,7 @@ class ThermalSystemIoT:
 
     def on_connect(self, client, userdata, flags, rc):
         if rc == 0:
-            print("Connected successfully to MQTT Broker!")
+            print("Successfully connected to MQTT Broker " + self.broker_address)
         else:
             print("Failed to connect, return code %d\n", rc)
 

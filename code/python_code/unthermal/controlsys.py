@@ -1,6 +1,8 @@
 # import matplotlib
 # matplotlib.use("widget", force=True)
 import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+from IPython.display import display, clear_output
 import numpy as np
 from pathlib import Path
 import control as ct
@@ -8,9 +10,10 @@ import struct
 from queue import Queue
 from math import ceil
 import json
+import time
 
 from scipy.signal import cont2discrete
-from .thermalsys import ThermalSystemIoT, PATH_DATA, PATH_DEFAULT
+from .thermalsys import ThermalSystemIoT, PATH_DATA, PATH_DEFAULT, FONT_SIZE
 
 def float2hex(value):
     val_binary = struct.pack('>f', value)
@@ -53,6 +56,15 @@ def time2hex(time_points):
         hstring += long2hex(t)
     return hstring
 
+
+def display_immediately(fig):
+    canvas = fig.canvas
+    display(canvas)
+    canvas._handle_message(canvas, {'type': 'send_image_mode'}, [])
+    canvas._handle_message(canvas, {'type': 'refresh'}, [])
+    canvas._handle_message(canvas, {'type': 'initialized'}, [])
+    canvas._handle_message(canvas, {'type': 'draw'}, [])
+
 def set_reference(system, ref_value=50):
     ref_hex = float2hex(ref_value)
     topic_pub = system.codes["USER_SYS_SET_REF"]
@@ -89,8 +101,6 @@ def step_closed(system, r0=0 , r1=100, t0=0 ,  t1=1):
     def step_message(system, userdata, message):
         q.put(message)
 
-
-
     low_val = r0
     high_val = r1
     low_time = t0
@@ -123,13 +133,19 @@ def step_closed(system, r0=0 , r1=100, t0=0 ,  t1=1):
 
 
     # Setting the graphics configuration for visualizing the experiment
-    plt.close("all")
-    fig, (ay, au) = plt.subplots(nrows=2, ncols=1, width_ratios = [1], height_ratios= [4,1], figsize=(16, 9))
-    fig.set_facecolor('#b7c4c8f0')
+
+    with plt.ioff():
+        fig, (ay, au) = plt.subplots(nrows=2, ncols=1, width_ratios=[1], height_ratios=[4, 1], figsize=(10, 6))
+    display_immediately(fig)
+
+    # display config
+    fig.set_facecolor('#ffffff') #'#b7c4c8f0')
 
     # settings for the upper axes, depicting the model and speed data
-    ay.set_title(f'Closed loop step response experiment with an initial value of  $r_0=${r0:0.2f} and a  final value of $r_0=${r1:0.2f}')
-    ay.set_ylabel('')
+    ay.set_title(f'Closed loop step response experiment with an initial value of'
+                 f'  $r_0=${r0:0.2f} and a  final value of $r_0=${r1:0.2f}', fontsize=FONT_SIZE)
+    ay.set_ylabel(r'Temperature $o^C$')
+    ay.set_xlabel(r'Time (s)')
     ay.grid(True);
     ay.grid(color='#806600ff', linestyle='--', linewidth=0.25)
     ay.set_facecolor('#f4eed7ff')
@@ -140,10 +156,11 @@ def step_closed(system, r0=0 , r1=100, t0=0 ,  t1=1):
     delta_r = abs(r1 - r0)
     ylimits = [r0 , r1]
     ylimits = [np.min(ylimits)- py * delta_r , np.max(ylimits) + py * delta_r]
-
     ay.set_ylim(ylimits[0], ylimits[1])
 
     au.set_facecolor('#d7f4e3ff')
+    ay.set_ylabel(r'Power Input (%)')
+    au.set_xlabel(r'Time (s)')
     au.set_ylim(0, 100)
     au.set_xlim(0, t0 + t1 - sampling_time )
     au.grid(color='#008066ff', linestyle='--', linewidth=0.25)
@@ -154,17 +171,14 @@ def step_closed(system, r0=0 , r1=100, t0=0 ,  t1=1):
     line_u, = au.plot(t, u, color="#0066ffff")
 
 
+    #display_immediately(fig)
 
-
-
-    box = dict(boxstyle='round,pad=0.5', facecolor='white', edgecolor='white', alpha=0.75)
-    # y_txt = ay.text( t0 + t1- 3, ylimits[0] + 1 , 'Temperature:\n ', fontsize=15, color="#ff6680",ha='right', va='bottom', bbox=box)
-    # u_txt = au.text(t0 + t1 - 3 , 15, f'Input:', fontsize=15, color="#0066ffB0",ha='right', va='bottom', bbox=box)
 
 
     exp = []
     n = -1
     sync = False
+
 
     while n < points:
         try:
@@ -178,6 +192,9 @@ def step_closed(system, r0=0 , r1=100, t0=0 ,  t1=1):
         n = hex2long(n_hex)
         if n == 0:
             sync = True
+
+
+
         if sync == True:
             t_curr = n * sampling_time
             t.append(t_curr)
@@ -187,14 +204,19 @@ def step_closed(system, r0=0 , r1=100, t0=0 ,  t1=1):
             r.append(r_curr)
             u_curr = hex2float(msg_dict["u"])
             u.append(u_curr)
+            exp.append([t_curr, r_curr, y_curr, u_curr])
+            # ay.clear()
+            # au.clear()
+            ay.legend([line_r, line_y], [f'$r(t):$ {r_curr:0.2f}', f'$y(t):$ {y_curr: 0.3f}$~^oC$'], fontsize= FONT_SIZE, loc="upper left")
+            au.legend([line_u], [f'$u(t):$ {u_curr: 0.1f}'], fontsize=  FONT_SIZE)
             line_r.set_data(t, r)
             line_y.set_data(t, y)
             line_u.set_data(t, u)
-            ay.legend([line_r, line_y], [f'$r(t):$ {r_curr:0.2f}', f'$y(t):$ {y_curr: 0.3f}$~^oC$'], fontsize=16, loc="upper left")
-            au.legend([line_u], [f'$u(t):$ {u_curr: 0.1f}'], fontsize=16)
-            exp.append([t_curr, r_curr, y_curr, u_curr])
-            plt.draw()
-            plt.pause(sampling_time)
+
+            fig.canvas.draw()
+            time.sleep(sampling_time)
+
+
 
 
     #plt.savefig(PATH_DATA + "result.png", bbox_inches="tight")
