@@ -17,7 +17,6 @@ dependencies = [
     "numpy",
     "matplotlib",
     "scipy",
-    "PyQt6"
 ]
 [tool.setuptools.packages.find]
 where = ["."]
