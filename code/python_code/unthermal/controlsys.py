@@ -73,7 +73,7 @@ def set_reference(system, ref_value=50):
     system.publish(topic_pub, message)
     system.disconnect()
     rcode = True
-    print("succesfull change of reference")
+    print("Reference changed")
     return rcode
 
 
@@ -92,9 +92,8 @@ def set_pid(system, kp=1, ki=0.4, kd=0, N=5, beta=1):
     system.connect()
     system.publish(topic_pub, message)
     system.disconnect()
-    rcode = True
-    print("succesfull change of PID parameters")
-    return rcode
+    print("PID parameters changed")
+    return
 
 
 def step_closed(system, r0=0 , r1=100, t0=0 ,  t1=1):
@@ -152,7 +151,7 @@ def step_closed(system, r0=0 , r1=100, t0=0 ,  t1=1):
     ay.set_xlim(0, t0 + t1  - sampling_time)
 
     #Setting the limits of figure
-    py = 0.3
+    py = 0.4
     delta_r = abs(r1 - r0)
     ylimits = [r0 , r1]
     ylimits = [np.min(ylimits)- py * delta_r , np.max(ylimits) + py * delta_r]
@@ -169,9 +168,6 @@ def step_closed(system, r0=0 , r1=100, t0=0 ,  t1=1):
     line_r, = ay.plot(t, r, drawstyle='steps-post', color="#008066ff", linewidth=1.25)
     line_y, = ay.plot(t, y, color="#ff0066ff")
     line_u, = au.plot(t, u, color="#0066ffff")
-
-
-    #display_immediately(fig)
 
 
 
@@ -194,7 +190,6 @@ def step_closed(system, r0=0 , r1=100, t0=0 ,  t1=1):
             sync = True
 
 
-
         if sync == True:
             t_curr = n * sampling_time
             t.append(t_curr)
@@ -205,22 +200,14 @@ def step_closed(system, r0=0 , r1=100, t0=0 ,  t1=1):
             u_curr = hex2float(msg_dict["u"])
             u.append(u_curr)
             exp.append([t_curr, r_curr, y_curr, u_curr])
-            # ay.clear()
-            # au.clear()
-            ay.legend([line_r, line_y], [f'$r(t):$ {r_curr:0.2f}', f'$y(t):$ {y_curr: 0.3f}$~^oC$'], fontsize= FONT_SIZE, loc="upper left")
-            au.legend([line_u], [f'$u(t):$ {u_curr: 0.1f}'], fontsize=  FONT_SIZE)
+            ay.legend([line_r, line_y], [f'$r(t):$ {r_curr:0.2f}$~^oC$', f'$y(t):$ {y_curr: 0.3f}$~^oC$'], fontsize= FONT_SIZE, loc="upper left")
+            au.legend([line_u], [f'$u(t):$ {u_curr: 0.1f} (% of 2.475 W)'], fontsize=  FONT_SIZE)
             line_r.set_data(t, r)
             line_y.set_data(t, y)
             line_u.set_data(t, u)
-
             fig.canvas.draw()
             time.sleep(sampling_time)
 
-
-
-
-    #plt.savefig(PATH_DATA + "result.png", bbox_inches="tight")
-    # plt.imshow(PATH_DATA + "result.png")
     np.savetxt(PATH_DEFAULT + "Thermal_step_closed_exp.csv",  exp, delimiter=",", fmt="%0.8f", comments="", header='t,r,y,u')
     np.savetxt(PATH_DATA + "Thermal_step_closed_exp.csv",  exp, delimiter=",", fmt="%0.8f", comments="", header='t,r,y,u')
     system.disconnect()
@@ -483,9 +470,13 @@ def profile_closed(system, timevalues = [0, 50, 100 , 150], refvalues = [40, 50,
 
 
     # Setting the graphics configuration for visualizing the experiment
-    plt.close("all")
-    fig, (ay, au) = plt.subplots(nrows=2, ncols=1, width_ratios = [1], height_ratios= [4,1], figsize=(16, 9))
-    fig.set_facecolor('#b7c4c8f0')
+
+    with plt.ioff():
+        fig, (ay, au) = plt.subplots(nrows=2, ncols=1, width_ratios=[1], height_ratios=[4, 1], figsize=(10, 6))
+    display_immediately(fig)
+
+    # display config
+    fig.set_facecolor('#ffffff') #'#b7c4c8f0')
 
     # settings for the upper axes, depicting the model and speed data
     ay.set_title(f'Profile response experiment with a duration of {timevalues[-1]:0.2f} seconds and {len(timevalues):d} edges')
