@@ -370,6 +370,9 @@ def get_models_prbs(system, yop = 50, amplitude= 4, usefile = False):
 
     if not usefile:
         prbs_open(system, yop=yop, amplitude=amplitude, stab_time=89, uee_time=10, divider=25)
+        time.sleep(2)
+        prbs_open(system, yop=yop, amplitude=amplitude, stab_time=89, uee_time=10, divider=25)
+
 
     t, u, y = read_csv_file3()
     m = 1.2341015052212259
@@ -661,6 +664,10 @@ def get_fomodel_step(system, yop=50, t1=400, usefile=False):
 
     if  not usefile:
         step_open(system, yop=yop, amplitude=5, t1=t1, stab_time=89, uee_time=10);
+        time.sleep(2)
+        step_open(system, yop=yop, amplitude=5, t1=t1, stab_time=89, uee_time=10);
+
+
 
 
 
