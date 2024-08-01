@@ -1,5 +1,5 @@
-# import matplotlib
-# matplotlib.use("widget", force=True)
+# Required libraries
+
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from IPython.display import display, clear_output
@@ -178,7 +178,7 @@ def step_closed(system, r0=0 , r1=100, t0=0 ,  t1=1):
 
     while n < points:
         try:
-            message = q.get(True, 20 * sampling_time)
+            message = q.get(True, 20)
         except:
             raise TimeoutError("The connection has been lost. Please try again")
 
@@ -206,60 +206,94 @@ def step_closed(system, r0=0 , r1=100, t0=0 ,  t1=1):
             line_y.set_data(t, y)
             line_u.set_data(t, u)
             fig.canvas.draw()
-            time.sleep(sampling_time)
-
+            time.sleep(0.1)
+    Path(PATH_DATA).mkdir(exist_ok=True)
     np.savetxt(PATH_DEFAULT + "Thermal_step_closed_exp.csv",  exp, delimiter=",", fmt="%0.8f", comments="", header='t,r,y,u')
     np.savetxt(PATH_DATA + "Thermal_step_closed_exp.csv",  exp, delimiter=",", fmt="%0.8f", comments="", header='t,r,y,u')
     system.disconnect()
     return t, r, y, u
 
 
-def stairs_closed(system, stairs=[40, 50, 60], duration=100):
-    def usersignal_message(system, userdata, message):
+def stairs_closed(system, stairs=[40, 50, 60], duration=50):
+    def stairs_message(system, userdata, message):
         q.put(message)
 
-    # accessing fields of system IoT
+
+    # accessing fields of system IoT system
     sampling_time = system.codes["THERMAL_SAMPLING_TIME"]
     topic_pub = system.codes["USER_SYS_STAIRS_CLOSED"]
     topic_sub = system.codes["SYS_USER_SIGNALS_CLOSED"]
     points = len(stairs)
     points_hex = long2hex(points)
     signal_hex = signal2hex(stairs)
-    duration_points = math.ceil(duration / sampling_time)
+    duration_points = ceil(duration / sampling_time)
     duration_points_hex = long2hex(duration_points)
-    message = json.dumps({"signal": signal_hex, "duration": duration_points_hex, "points": points_hex})
-    system.client.on_message = usersignal_message
+    message = json.dumps({"signal": signal_hex,
+                          "duration": duration_points_hex,
+                          "points": points_hex})
+    system.client.on_message = stairs_message
     system.connect()
     system.subscribe(topic_sub)
     system.publish(topic_pub, message)
+
+    total_points = duration_points * points - 1
+
     q = Queue()
-    np = -1
     y = []
     r = []
-    t = []
     u = []
+    t = []
+
+    # Setting the graphics configuration for visualizing the experiment
+
+    with plt.ioff():
+        fig, (ay, au) = plt.subplots(nrows=2, ncols=1, width_ratios=[1], height_ratios=[4, 1], figsize=(10, 6))
+    display_immediately(fig)
+
+    # display config
+    fig.set_facecolor('#ffffff')  # '#b7c4c8f0')
+
+    # settings for the upper axes, depicting the model and speed data
+    ay.set_title(
+        f'Profile response experiment with a duration of {total_points*sampling_time:0.2f} seconds and {points:d} stairs')
+    ay.set_ylabel('')
+    ay.grid(True);
+    ay.grid(color='#806600ff', linestyle='--', linewidth=0.25)
+    ay.set_facecolor('#f4eed7ff')
+    ay.set_xlim(0, total_points*sampling_time)
+
+    # Setting the limits of figure
+    ylimits = [np.min(stairs) - 5, np.max(stairs) + 5]
+    ay.set_ylim(ylimits[0], ylimits[1])
+
+    au.set_facecolor('#d7f4e3ff')
+    au.set_ylim(0, 100)
+    au.set_xlim(0, total_points*sampling_time)
+    au.grid(color='#008066ff', linestyle='--', linewidth=0.25)
+
+    line_r, = ay.plot(t, r, drawstyle='steps-post', color="#008066ff", linewidth=1.25)
+    line_y, = ay.plot(t, y, color="#ff0066ff")
+    line_u, = au.plot(t, u, color="#0066ffff")
+
     exp = []
-    plt.close("all")
-    fig, ax = plt.subplots()
-    line_r, = ax.plot(t, r, 'b-')
-    line_y, = ax.plot(t, y, 'r-')
-    ax.set_xlim(0, sampling_time * duration_points * points)
-    ax.set_ylim(20, 100)
-    plt.grid()
-    npc = 1
-    while npc <= duration_points * points - 1:
+    n = -1
+    sync = False
+
+    while n < total_points:
         try:
-            message = q.get(True, 20 * sampling_time)
+            message = q.get(True, 20)
         except:
             raise TimeoutError("The connection has been lost. Please try again")
 
         decoded_message = str(message.payload.decode("utf-8"))
         msg_dict = json.loads(decoded_message)
-        np_hex = str(msg_dict["np"])
-        np = hex2long(np_hex)
-        print(np, hex2float(msg_dict["r"]), hex2float(msg_dict["y"]))
-        if np == npc:
-            t_curr = (np - 1) * sampling_time
+        n_hex = str(msg_dict["np"])
+        n = hex2long(n_hex)
+
+        if n == 0:
+            sync = True
+        if sync == True:
+            t_curr = n * sampling_time
             t.append(t_curr)
             y_curr = hex2float(msg_dict["y"])
             y.append(y_curr)
@@ -267,19 +301,21 @@ def stairs_closed(system, stairs=[40, 50, 60], duration=100):
             r.append(r_curr)
             u_curr = hex2float(msg_dict["u"])
             u.append(u_curr)
+            exp.append([t_curr, r_curr, y_curr, u_curr])
+            ay.legend([line_r, line_y], [f'$r(t):$ {r_curr:0.2f}', f'$y(t):$ {y_curr: 0.3f}$~^oC$'], fontsize=FONT_SIZE,
+                      loc="upper left")
+            au.legend([line_u], [f'$u(t):$ {u_curr: 0.1f} (% of 2.475 W)'], fontsize=FONT_SIZE)
             line_r.set_data(t, r)
             line_y.set_data(t, y)
-            exp.append([t_curr, r_curr, y_curr, u_curr])
-            plt.draw()
-            plt.pause(0.1)
-            npc += 1
+            line_u.set_data(t, u)
+            fig.canvas.draw()
+            time.sleep(0.1)
 
-
-    npy.savetxt(PATH_DEFAULT + "Thermal_stairs_closed_exp.csv", exp, delimiter=",", fmt="%0.8f", comments="", header='t,r,y,u')
-    npy.savetxt(PATH_DATA + "Thermal_stairs_closed_exp.csv", exp, delimiter=",", fmt="%0.8f", comments="", header='t,r,y,u')
+    np.savetxt(PATH_DEFAULT + "Thermal_stairs_closed_exp.csv", exp, delimiter=",", fmt="%0.8f", comments="", header='t,r,y,u')
+    np.savetxt(PATH_DATA + "Thermal_stairs_closed_exp.csv", exp, delimiter=",", fmt="%0.8f", comments="", header='t,r,y,u')
     system.disconnect()
-    plt.show()
-    return t, y, r, u
+
+    return t, r, y, u
 
 
 
@@ -334,8 +370,7 @@ def set_controller(system, controller):
         D2 = D2[0][0]
         N2 = N2 / D2[0]
         D2 = D2/ D2[0]
-        print(N1, D1)
-        print(N2, D2)
+
 
         if len(N1) == len(D1):
             d1 = N1[0]
@@ -403,6 +438,7 @@ def set_controller(system, controller):
     system.connect()
     system.publish(topic_pub, message)
     system.disconnect()
+    print("Controller updated")
     return
 
 
@@ -513,7 +549,7 @@ def profile_closed(system, timevalues = [0, 50, 100 , 150], refvalues = [40, 50,
 
     while n < total_points:
         try:
-            message = q.get(True, 20 * sampling_time)
+            message = q.get(True, 20)
         except:
             raise TimeoutError("The connection has been lost. Please try again")
 
@@ -521,7 +557,7 @@ def profile_closed(system, timevalues = [0, 50, 100 , 150], refvalues = [40, 50,
         msg_dict = json.loads(decoded_message)
         n_hex = str(msg_dict["np"])
         n = hex2long(n_hex)
-        print(n)
+
         if n == 0:
             sync = True
         if sync == True:
@@ -533,17 +569,15 @@ def profile_closed(system, timevalues = [0, 50, 100 , 150], refvalues = [40, 50,
             r.append(r_curr)
             u_curr = hex2float(msg_dict["u"])
             u.append(u_curr)
+            exp.append([t_curr, r_curr, y_curr, u_curr])
+            ay.legend([line_r, line_y], [f'$r(t):$ {r_curr:0.2f}', f'$y(t):$ {y_curr: 0.3f}$~^oC$'], fontsize=FONT_SIZE, loc="upper left")
+            au.legend([line_u], [f'$u(t):$ {u_curr: 0.1f} (% of 2.475 W)'], fontsize=FONT_SIZE)
             line_r.set_data(t, r)
             line_y.set_data(t, y)
             line_u.set_data(t, u)
-            ay.legend([line_r, line_y], [f'$r(t):$ {r_curr:0.2f}', f'$y(t):$ {y_curr: 0.3f}$~^oC$'], fontsize=16, loc="upper left")
-            au.legend([line_u], [f'$u(t):$ {u_curr: 0.1f}'], fontsize=16)
-            exp.append([t_curr, r_curr, y_curr, u_curr])
-            plt.draw()
-            plt.pause(sampling_time)
-    ay.legend([line_r, line_y], ['$r(t)$ (reference)', '$y_R(t)$ (real output)'], fontsize=16,
-              loc="upper left")
-    au.legend([line_u], ['$u(t)$ (control signal)'], fontsize=14)
+            fig.canvas.draw()
+            time.sleep(0.1)
+
 
 
 
@@ -551,7 +585,7 @@ def profile_closed(system, timevalues = [0, 50, 100 , 150], refvalues = [40, 50,
                comments="", header='t,r,y,u')
     np.savetxt(PATH_DATA + "Thermal_profile_closed_exp.csv", exp, delimiter=",", fmt="%0.8f",
                comments="", header='t,r,y,u')
-    plt.show()
+
     system.disconnect()
     return t, r, y, u
 

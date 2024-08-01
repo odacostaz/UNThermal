@@ -17,14 +17,12 @@ dependencies = [
     "numpy",
     "matplotlib",
     "scipy",
+    "control",
+    "ipympl"
 ]
 [tool.setuptools.packages.find]
 where = ["."]
-#[tool.setuptools.packages.find]
-#where = ["experiment_files", "src"]
-#
-#
-#
+
 [tool.setuptools.package-data]
 where = ["datafiles"]
 include = ["*.csv"]

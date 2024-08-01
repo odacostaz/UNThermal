@@ -15,7 +15,7 @@ DallasTemperature sensors(&oneWire);  // connection to Dallas ds18b20 temperatur
 Adafruit_NeoPixel dispLeds(NUMPIXELS, LIGHT_PIN, NEO_GRB); // connection to rgb leds that display temperature
 
 
-// Task handles for resuming and suspending  tasks
+// Task handles for resuming and suspending tasks
 TaskHandle_t h_controlPidTask;
 TaskHandle_t h_identifyTask;
 TaskHandle_t h_generalControlTask;
@@ -289,6 +289,7 @@ void resumeControl(){
 void defaultControl(){
     codeTopic = DEFAULT_TOPIC;
     reset_int = true;
+    reference = DEFAULT_REFERENCE;
     vTaskSuspend(h_publishStateTask);
     vTaskSuspend(h_identifyTask);
     resumeControl();
@@ -338,9 +339,6 @@ void IRAM_ATTR onMqttReceived(char* lastTopic, byte* lastPayload, unsigned int l
     }
 
     else if (strstr(lastTopic, USER_SYS_STAIRS_CLOSED)){
-        vTaskSuspend(h_identifyTask);
-        vTaskSuspend(h_controlPidTask);
-        vTaskSuspend(h_generalControlTask);
         codeTopic = USER_SYS_STAIRS_CLOSED_INT;
         deserializeJson(doc, lastPayload);
         points_stairs = hex2Long((const char *) doc["points"]);
@@ -351,6 +349,7 @@ void IRAM_ATTR onMqttReceived(char* lastTopic, byte* lastPayload, unsigned int l
         np = 0;
         Serial.printf("Stairs signal of %d steps  with a duration of %0.2f secs.\n", points_stairs, h * total_time);
         resumeControl();
+        vTaskResume(h_publishStateTask);
     }
 
     else if(strstr(lastTopic, USER_SYS_PRBS_OPEN )) {
@@ -523,25 +522,31 @@ float movingAverage(float newValue) {
 void  computeReference() {
    switch (codeTopic) {
         case DEFAULT_TOPIC:
-            displayLed(y, 0, 100, 0.25, 0);
-            displayLed(reference, 0, 100, 0.25, 1);
+            if (touchRead(BUTTON_MINUS) > THRESHOLD_MINUS){
+                reference = constrain(reference - 5,20,90);
+            }
+            if (touchRead(BUTTON_PLUS) > THRESHOLD_PLUS){
+                reference = constrain(reference + 5,20,90);
+            }
+
+
+            displayLed(y, 20, 90, 0.25, 0);
+            displayLed(reference, 20, 90, 0.25, 1);
             displayLed(usat, 0, 100, 0.2, 2);
             break;
 
         case USER_SYS_STEP_CLOSED_INT:
             if (np < points_low) {
                 reference = low_val;
-                //xTaskNotify(h_publishStateTask, 0b0001, eSetBits);
-                displayLed(y, 10, 90, 0.3, 0);
-                displayLed(reference, 10, 90, 0.3, 1);
+                displayLed(y, 20, 90, 0.3, 0);
+                displayLed(reference, 20, 90, 0.3, 1);
                 displayLed(usat, 0, 100, 0.1, 2);
 
             }
             else if (np <= total_time) {
                 reference = high_val;
-                //xTaskNotify(h_publishStateTask, 0b0001, eSetBits);
-                displayLed(y, 10, 90, 0.3, 0);
-                displayLed(reference, 10, 90, 0.3, 1);
+                displayLed(y, 20, 90, 0.3, 0);
+                displayLed(reference, 20, 90, 0.3, 1);
                 displayLed(usat, 0, 100, 0.1, 2);
             }
             else if (np <= total_time + 1){
@@ -554,20 +559,22 @@ void  computeReference() {
         case USER_SYS_STAIRS_CLOSED_INT:
             if (np <= total_time) {
                 reference = stairs[np / duration];
-                displayLed(reference, 20, 90,0.3, 0);
-                displayLed(y, 20, 90, 0.3, 1);
+                displayLed(y, 20, 90, 0.3, 0);
+                displayLed(reference, 20, 90, 0.3, 1);
+                displayLed(usat, 0, 100, 0.1, 2);
             }
             else if (np == total_time + 1) {
                 printf("Stairs closed loop response completed\n");
                 ledcWrite(PWM_CHANNEL, 0 * percent2pwm);
-                reference = DEFAULT_REFERENCE;
                 defaultControl();
             }
             break;
        case USER_SYS_PROFILE_CLOSED_INT:
            if (np <= total_time) {
                reference = linearInterpolation(timeValues, stairs, points_stairs, np);
-               displayLed(y, low_val, high_val, 0, 6);
+               displayLed(y, 20, 90, 0.3, 0);
+               displayLed(reference, 20, 90, 0.3, 1);
+               displayLed(usat, 0, 100, 0.1, 2);
 
            }
            else if (np == total_time + 1) {
@@ -657,7 +664,7 @@ static void controlPidTask(void *pvParameters) {
         // This is a firmware protection in case of sensor failure or overtemperature.
         if (y <= 0 || y >= 100) {
             wattsToPlant(0);
-            vTaskSuspend(nullptr);
+            continue;
         }
         bi = ki*h;
         ad = kd/(N*(kd/N + h));
@@ -669,8 +676,8 @@ static void controlPidTask(void *pvParameters) {
         wattsToPlant(usat); // Enviar señal de control en bits
         IA = IA + bi *(reference - y) + br*(usat - u);  // calculo de la accion integral
         y_ant = y;
-        sensors.requestTemperatures();
         xTaskNotify(h_publishStateTask, 0b0001, eSetBits);
+        sensors.requestTemperatures();
         xTaskDelayUntil(&xLastWakeTime, taskPeriod);
         np+=1;
     }
@@ -701,7 +708,7 @@ static void generalControlTask(void *pvParameters) {
 
         if (y <= 0 || y >= 100) {
             wattsToPlant(0);
-            vTaskSuspend(nullptr);
+
         }
 
         if (typeControl == GENERAL_CONTROLLER_1P){
@@ -713,8 +720,8 @@ static void generalControlTask(void *pvParameters) {
         usat = constrain(u, 0, 100);
         wattsToPlant( usat);
         //printf("elapsed =%d\n", xTaskGetTickCount() - inicio);
-        sensors.requestTemperatures();
         xTaskNotify(h_publishStateTask, 0b0001, eSetBits);
+        sensors.requestTemperatures();
         xTaskDelayUntil(&xLastWakeTime, taskPeriod);
         np +=1;
     }
@@ -751,7 +758,7 @@ static void identifyTask(void *pvParameters) {
         }
         // This is for protecting the system both if the sensor fails or there is overtemperature
         if (y <= 0 || y >= 100) {
-            ledcWrite(PWM_CHANNEL, 0 * percent2pwm);
+            wattsToPlant(0);
             continue;
         }
 
@@ -761,18 +768,21 @@ static void identifyTask(void *pvParameters) {
         if (np < stab_points) {
             PA = kp_id * (beta_id * reference - y);
             u = PA + IA ; // control signal
-            usat =  constrain(u, 0, 100); //señal de control saturada
+            usat =  constrain(u, 0, 100); // saturated control signal
             wattsToPlant(usat);
             uf = movingAverage(usat);
-            IA = IA + bi *(reference - y) + br*(usat - u);  // calculo de la accion integral
-            displayLed(u, 0, 90, 0.25, 2);
+            IA = IA + bi *(reference - y) + br*(usat - u);  // integral action
+            displayLed(u, 0, 100, 0.25, 2);
             displayLed(y, 20, 90, 0.25, 0);
+            displayLed(reference, 20, 90, 0.25, 1);
+
         }
         else if (np <= stab_points + uee_points) {
             usat = uf;
             wattsToPlant(usat);
             displayLed(usat, uf - 1.2*high_val, uf + 1.2*high_val, 0.25, 2);
             displayLed(y, reference - 5, reference + 5,  0.25,0);
+            displayLed(reference, reference - 5, reference + 5,  0.25,1);
         }
 
         else if ((np <= total_time) & (codeTopic == USER_SYS_PRBS_OPEN_INT)) {
@@ -783,6 +793,9 @@ static void identifyTask(void *pvParameters) {
             } else {
                 usat = uf - high_val;
             }
+            displayLed(usat, uf - 1.2*high_val, uf + 1.2*high_val, 0.25, 2);
+            displayLed(y, reference - 5, reference + 5,  0.25,0);
+            displayLed(reference, reference - 5, reference + 5,  0.25,1);
             wattsToPlant(usat);
         }
         else if ((np <= total_time) & (codeTopic == USER_SYS_STEP_OPEN_INT)) {
@@ -799,10 +812,11 @@ static void identifyTask(void *pvParameters) {
             }
             defaultControl();
         }
-        xTaskNotify(h_publishStateTask, 0b0010, eSetBits);
+
+        xTaskNotify(h_publishStateTask,0b0010, eSetBits);
         sensors.requestTemperatures();
-        vTaskDelayUntil(&xLastWakeTime, taskPeriod);
-        np += 1;
+        xTaskDelayUntil(&xLastWakeTime, taskPeriod);
+        np +=1;
     }
 }
 
@@ -920,7 +934,7 @@ void setup() {
             "general control",
             8192,
             NULL,
-            23,
+            22,
             &h_generalControlTask,
             CORE_CONTROL
     );
@@ -932,7 +946,7 @@ void setup() {
             "prbs-ident",
             8192,
             NULL,
-            23,
+            20,
             &h_identifyTask,
             CORE_CONTROL
     );
@@ -964,7 +978,7 @@ void setup() {
             "handle connections",
             4096,
             nullptr,
-            1,
+            10,
             nullptr,
             CORE_COMM // communications are attached to core 1
     );

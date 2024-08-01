@@ -19,10 +19,10 @@
 
 
 // This is the pin for the Dallas 18b20 temperature sensor
-#define ONE_WIRE_BUS      1//  4
+#define ONE_WIRE_BUS      1
 
 // System definitions
-#define DEFAULT_REFERENCE  15
+#define DEFAULT_REFERENCE  40
 #define SAMPLING_TIME      0.8
 #define MAX_ORDER          10
 
@@ -31,6 +31,7 @@
 // Topics published by the thermal system
 #define SYS_USER_SIGNALS_CLOSED       "/thermal/thermal_" PLANT_NUMBER "/user/sig_closed"
 #define SYS_USER_SIGNALS_OPEN       "/thermal/thermal_" PLANT_NUMBER "/user/sig_open"
+
 // Topics received from the user
 #define USER_SYS_SET_PID           "/thermal/user/thermal_" PLANT_NUMBER "/set_pid"             //1
 #define USER_SYS_SET_REF           "/thermal/user/thermal_" PLANT_NUMBER "/set_ref"             //2
@@ -45,16 +46,12 @@
 // Integer definitions of topics to avoid comparison with strings, which is more computationally expensive
 
 
-
 #define DEFAULT_TOPIC                  0
 #define USER_SYS_STEP_CLOSED_INT       1
 #define USER_SYS_STAIRS_CLOSED_INT     2
 #define USER_SYS_PRBS_OPEN_INT         3
 #define USER_SYS_STEP_OPEN_INT         4
 #define USER_SYS_PROFILE_CLOSED_INT    5
-
-
-
 
 
 // Codes for modes of control
@@ -93,9 +90,11 @@ const uint8_t gamma8[] = {
 //  percent of control signal in the operation point
 const float percent2pwm = (float) (4095.0/100.0);
 
+
+
 // Button's configuration
 
-#define BUTTON_PLUS 4
-#define BUTTON_MINUS 2
-#define THRESHOLD_PLUS 44000
-#define THRESHOLD_MINUS 28000
+#define BUTTON_PLUS  7
+#define BUTTON_MINUS 6
+#define THRESHOLD_PLUS 60000
+#define THRESHOLD_MINUS 60000
