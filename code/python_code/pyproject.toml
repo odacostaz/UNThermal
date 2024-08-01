@@ -17,7 +17,6 @@ dependencies = [
     "numpy",
     "matplotlib",
     "scipy",
-    "control",
     "ipympl"
 ]
 [tool.setuptools.packages.find]
