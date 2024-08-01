@@ -18,7 +18,7 @@ import csv
 # parameters of communication
 
 
-BROKER = "192.168.0.12" # "18.204.70.207" # "192.168.0.3"
+BROKER = "18.204.70.207"
 PORT = 1883
 USER = "hpdesktop"
 PASSWORD = "hpdesktop"
