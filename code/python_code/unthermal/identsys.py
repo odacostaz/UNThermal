@@ -278,6 +278,7 @@ def prbs_open(system, yop=50, amplitude=4, stab_time=60, uee_time=10, divider = 
         except:
             raise TimeoutError("The connection has been lost. Please try again")
 
+
         decoded_message = str(message.payload.decode("utf-8"))
         msg_dict = json.loads(decoded_message)
         n_hex = str(msg_dict["np"])
@@ -321,11 +322,15 @@ def prbs_open(system, yop=50, amplitude=4, stab_time=60, uee_time=10, divider = 
                            fontsize=FONT_SIZE, loc="upper left")
                 uax.legend([line_ut], [f'$u(t):$ {ut_curr: 0.1f}'], fontsize=FONT_SIZE)
                 exp.append([tt_curr - tstep, ut_curr, yt_curr])
+                np.savetxt(PATH_DEFAULT + "Thermal_prbs_open_exp.csv", exp, delimiter=",", fmt="%0.8f", comments="",
+                           header='t,u,y')
+                np.savetxt(PATH_DATA + "Thermal_prbs_open_exp.csv", exp, delimiter=",", fmt="%0.8f", comments="",
+                           header='t,u,y')
+
             fig.canvas.draw()
             time.sleep(0.1)
 
-    np.savetxt(PATH_DEFAULT + "Thermal_prbs_open_exp.csv", exp, delimiter=",", fmt="%0.8f", comments="", header='t,u,y')
-    np.savetxt(PATH_DATA + "Thermal_prbs_open_exp.csv", exp, delimiter=",", fmt="%0.8f", comments="", header='t,u,y')
+
     system.disconnect()
     print("PBRS experiment completed\n")
     return tt, ut, yt
@@ -339,19 +344,20 @@ def get_models_prbs(system, yop = 50, amplitude= 4, usefile = False):
     def simulate_fo_model(x):
         # this function simulates the model
         alpha, tau = x
+        um_i = um_interp(t_interp)
         s = ct.TransferFunction.s
         G = alpha / (tau*s + 1)
-        tsim, ysim = ct.forced_response(G, t, um)
+        tsim, ysim = ct.forced_response(G, t_interp, um_i)
         return G, ysim
 
 
     def simulate_fotd_model(x):
         # this function simulates the model
         alpha, tau1, tau2 = x
-        um_delay = um_interp(np.array(t) - tau2)
+        um_delay = um_interp(np.array(t_interp) - tau2)
         s = ct.TransferFunction.s
         G = alpha / ( tau1*s + 1)
-        tsim, ysim = ct.forced_response(G, t, um_delay)
+        tsim, ysim = ct.forced_response(G, t_interp, um_delay)
         return G, ysim
 
     def objective_fo(x):
@@ -372,17 +378,25 @@ def get_models_prbs(system, yop = 50, amplitude= 4, usefile = False):
          raise ValueError(f"The maximum temperature for this system is 100 degrees celsius")
 
     if not usefile:
-        prbs_open(system, yop=yop, amplitude=amplitude, stab_time=89, uee_time=10, divider=20)
+        try:
+            prbs_open(system, yop=yop, amplitude=amplitude, stab_time=89, uee_time=10, divider=20)
+        except:
+            print("The connection has been lost. We use partial data.")
 
-
-
+    sampling_time = system.codes["THERMAL_SAMPLING_TIME"]
     t, u, y = read_csv_file3()
-    m = 1.2341015052212259
+
+
     ymean = np.mean(y)
     um = np.array(u) - u[0]
     ym = np.array(y) - ymean
 
     um_interp = interp1d(t, um, fill_value = (0,0 ), bounds_error=False)
+    ym_interp = interp1d(t, ym)
+    t_interp = np.arange(0, t[-1] + sampling_time, sampling_time)
+
+
+
 
     """Now we obtain the initial parameters for the model
                         alpha
@@ -440,7 +454,7 @@ def get_models_prbs(system, yop = 50, amplitude= 4, usefile = False):
 
     if usefile:
         with plt.ioff():
-            plt.close("all")
+            #plt.close("all")
             fig, (ay, au) = plt.subplots(nrows=2, ncols=1, width_ratios=[1], height_ratios=[4, 1], figsize=(10, 6))
             fig.set_facecolor('#ffffff')
         display_immediately(fig)
@@ -635,11 +649,14 @@ def step_open(system, yop=50, amplitude=5, t1=300, stab_time=89, uee_time=10):
                            fontsize=FONT_SIZE, loc="upper left")
                 uax.legend([line_ut], [f'$u(t):$ {ut_curr: 0.1f} %'], fontsize=FONT_SIZE)
                 exp.append([tt_curr - tstep, ut_curr, yt_curr])
+                np.savetxt(PATH_DEFAULT + "Thermal_step_open_exp.csv", exp, delimiter=",", fmt="%0.8f", comments="",
+                           header='t,u,y')
+                np.savetxt(PATH_DATA + "Thermal_step_open_exp.csv", exp, delimiter=",", fmt="%0.8f", comments="",
+                           header='t,u,y')
             fig.canvas.draw()
             time.sleep(0.1)
 
-    np.savetxt(PATH_DEFAULT + "Thermal_step_open_exp.csv", exp, delimiter=",",fmt="%0.8f", comments="", header='t,u,y')
-    np.savetxt(PATH_DATA +  "Thermal_step_open_exp.csv", exp, delimiter=",",fmt="%0.8f", comments="", header='t,u,y')
+
     system.disconnect()
     return tt, ut, yt
 
@@ -667,8 +684,10 @@ def get_fomodel_step(system, yop=50, t1=400, usefile=False):
 
 
     if  not usefile:
-        step_open(system, yop=yop, amplitude=5, t1=t1, stab_time=89, uee_time=10);
-
+        try:
+            step_open(system, yop=yop, amplitude=5, t1=t1, stab_time=89, uee_time=10)
+        except:
+            print("The connection has been lost. We use partial data.")
 
 
 
