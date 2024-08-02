@@ -56,8 +56,8 @@ uint32_t timeValues[50];
 
 
 // Variables that keep the command sent by the user and the mode of control
-unsigned int codeTopic = DEFAULT_TOPIC;        //Integer code of the command sent by the user
-unsigned int typeControl = PID_CONTROLLER; //Integer code of mode of control,
+uint8_t codeTopic = DEFAULT_TOPIC;        //Integer code of the command sent by the user
+uint8_t  typeControl = PID_CONTROLLER; //Integer code of mode of control,
 // which can be PID or general control (default)
 
 
@@ -272,7 +272,6 @@ void suspendAllTasks(){
 
 void resumeControl(){
     reset_int = true;
-    vTaskSuspend(h_identifyTask);
     switch (typeControl) {
         case PID_CONTROLLER:
             vTaskResume(h_controlPidTask);
@@ -281,7 +280,6 @@ void resumeControl(){
             vTaskResume(h_generalControlTask);
             break;
         case GENERAL_CONTROLLER_2P:
-            vTaskSuspend(h_identifyTask);
             vTaskResume(h_generalControlTask);
             break;
     }
@@ -289,12 +287,12 @@ void resumeControl(){
 
 // This function activate the default controller
 void defaultControl(){
+    vTaskSuspend(h_publishStateTask);
     codeTopic = DEFAULT_TOPIC;
     reset_int = true;
     reference = DEFAULT_REFERENCE;
-    vTaskSuspend(h_publishStateTask);
-    vTaskSuspend(h_identifyTask);
     resumeControl();
+    vTaskSuspend(h_identifyTask);
 }
 
 
@@ -576,7 +574,7 @@ void  computeReference() {
                displayLed(usat, 0, 100, 0.1, 2);
 
            }
-           else if (np == total_time + 1) {
+           else if (np > total_time) {
                printf("Closed loop profile response completed\n");
                wattsToPlant(0);
                defaultControl();
@@ -801,21 +799,16 @@ static void identifyTask(void *pvParameters) {
             usat = high_val + uf;
             wattsToPlant(usat);
         }
-        else if (np == total_time + 1) {
+        else if (np > total_time) {
             wattsToPlant(0);
-            if (codeTopic == USER_SYS_STEP_OPEN_INT) {
-                printf("Open loop step response completed\n");
-            }
-            if (codeTopic == USER_SYS_PRBS_OPEN_INT) {
-                printf("PBRS open loop response completed\n");
-            }
+            printf("Open loop step response completed\n");
             defaultControl();
         }
-
         xTaskNotify(h_publishStateTask,0b0010, eSetBits);
         sensors.requestTemperatures();
         xTaskDelayUntil(&xLastWakeTime, taskPeriod);
         np +=1;
+
     }
 }
 
