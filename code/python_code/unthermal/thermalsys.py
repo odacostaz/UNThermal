@@ -15,23 +15,21 @@ import csv
 #
 
 
-# parameters of communication
+# default parameters of communication
 
 
 BROKER = "18.204.70.207"
 PORT = 1883
-USER = "hpdesktop"
-PASSWORD = "hpdesktop"
+USER = "user"
+PASSWORD = "user"
 PLANT_NUMBER = "1101"
-#topics for subscribing
 
 
-
+#default configuration
 
 PATH_DEFAULT = r"./experiment_files/"
 PATH_DATA = str(Path(__file__).parent) + r"/datafiles/"
 FONT_SIZE = 10
-
 Path(PATH_DEFAULT).mkdir(exist_ok=True)
 
 class ThermalSystemIoT:
