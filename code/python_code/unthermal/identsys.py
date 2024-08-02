@@ -196,7 +196,7 @@ def get_static_model(system, step = 5, usefile= False):
 
 
 
-def prbs_open(system, yop=50, amplitude=4, stab_time=60, uee_time=10, divider = 25):
+def prbs_open(system, yop=50, amplitude=4, stab_time=60, uee_time=10, divider = 20):
     def pbrs_message(system, userdata, message):
         q.put(message)
     op_point = yop
@@ -370,7 +370,7 @@ def get_models_prbs(system, yop = 50, amplitude= 4, usefile = False):
          raise ValueError(f"The maximum temperature for this system is 100 degrees celsius")
 
     if not usefile:
-        prbs_open(system, yop=yop, amplitude=amplitude, stab_time=89, uee_time=10, divider=25)
+        prbs_open(system, yop=yop, amplitude=amplitude, stab_time=89, uee_time=10, divider=20)
 
 
 
