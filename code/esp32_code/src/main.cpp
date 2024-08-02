@@ -272,6 +272,7 @@ void suspendAllTasks(){
 
 void resumeControl(){
     reset_int = true;
+    vTaskSuspend(h_identifyTask);
     switch (typeControl) {
         case PID_CONTROLLER:
             vTaskResume(h_controlPidTask);
@@ -280,6 +281,7 @@ void resumeControl(){
             vTaskResume(h_generalControlTask);
             break;
         case GENERAL_CONTROLLER_2P:
+            vTaskSuspend(h_identifyTask);
             vTaskResume(h_generalControlTask);
             break;
     }
@@ -346,7 +348,6 @@ void IRAM_ATTR onMqttReceived(char* lastTopic, byte* lastPayload, unsigned int l
         const char *hexSignal = doc["signal"];
         hexStringToFloatArray(stairs, hexSignal, points_stairs);
         total_time = points_stairs * duration - 1;
-        np = 0;
         Serial.printf("Stairs signal of %d steps  with a duration of %0.2f secs.\n", points_stairs, h * total_time);
         resumeControl();
         vTaskResume(h_publishStateTask);
@@ -363,7 +364,6 @@ void IRAM_ATTR onMqttReceived(char* lastTopic, byte* lastPayload, unsigned int l
         prbs_points = 63 * divider;
         total_time = prbs_points + stab_points + uee_points;
         reset_int = true;
-        np = 0;
         printf("Open loop test with a prbs signal with %d steps with a duration of %0.2f secs.\n",
                prbs_points, (total_time-1) * h);
         vTaskResume(h_publishStateTask);
@@ -383,7 +383,6 @@ void IRAM_ATTR onMqttReceived(char* lastTopic, byte* lastPayload, unsigned int l
         points_high = hex2Long((const char *) doc["points_high"]);
         total_time = points_high + stab_points + uee_points;
         reset_int = true;
-        np = 0;
         printf("Open loop step response\n");
         printf("\tOperation point= %0.2f\n\tAmplitude=%0.2f\n\tDuration=%0.2f\n", reference, high_val, (points_high-1)*h);
         vTaskResume(h_publishStateTask);
