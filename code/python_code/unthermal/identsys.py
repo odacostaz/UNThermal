@@ -11,7 +11,7 @@ import control as ct
 from .thermalsys import ThermalSystemIoT, PATH_DATA, PATH_DEFAULT, FONT_SIZE
 from .controlsys import  long2hex, float2hex, hex2long, set_pid, hex2float, display_immediately
 import json
-from math import ceil, nan, isnan
+from math import ceil
 from queue import Queue
 from pathlib import Path
 import csv
