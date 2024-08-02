@@ -255,7 +255,7 @@ void connectMqtt()
     }
     else
     {
-        printf("Failed MQTT connection code %d \n try again in 3 seconds\n", mqttClient.state());
+        printf("Failed MQTT connection code %d \n try again in 2 seconds\n", mqttClient.state());
     }
 }
 
@@ -874,7 +874,7 @@ void handleConnections(void *pvParameters) {
             connectWiFi();
         }
         if (!mqttClient.connected()) {
-            vTaskDelay(3000);
+            vTaskDelay(2000);
             connectMqtt();
         }
         mqttClient.loop();
