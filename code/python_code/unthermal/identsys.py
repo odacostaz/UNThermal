@@ -303,7 +303,7 @@ def prbs_open(system, yop=50, amplitude=4, stab_time=60, uee_time=10, divider = 
                     yt.append(y_curr)
                     ut.append(u_curr)
                     exp.append([0, u_curr, y_curr])
-                    uax.set_ylim(u_curr - amplitude - 1, umax + amplitude +1)
+
             else:
                 tt_curr = n * sampling_time
                 tt.append(tt_curr)
@@ -311,6 +311,7 @@ def prbs_open(system, yop=50, amplitude=4, stab_time=60, uee_time=10, divider = 
                 yt.append(yt_curr)
                 ut_curr = hex2float(msg_dict["u"])
                 ut.append(ut_curr)
+                uax.set_ylim(u_curr - amplitude - 1, umax + amplitude + 1)
                 line_yt.set_data(tt, yt)
                 line_ut.set_data(tt, ut)
                 line_y.set_data(t, y)
@@ -615,7 +616,6 @@ def step_open(system, yop=50, amplitude=5, t1=300, stab_time=89, uee_time=10):
                     tt.append(t_curr)
                     yt.append(y_curr)
                     ut.append(u_curr)
-                    uax.set_ylim(u_curr - 5, u_curr + 5)
                     exp.append([0, u_curr, y_curr])
             else:
                 tt_curr = n * sampling_time
@@ -624,6 +624,7 @@ def step_open(system, yop=50, amplitude=5, t1=300, stab_time=89, uee_time=10):
                 yt.append(yt_curr)
                 ut_curr = hex2float(msg_dict["u"])
                 ut.append(ut_curr)
+                uax.set_ylim(u_curr - 5, u_curr + 5)
                 line_yt.set_data(tt, yt)
                 line_ut.set_data(tt, ut)
                 line_y.set_data(t, y)
