@@ -697,7 +697,7 @@ def get_fomodel_step(system, yop=50, t1=400, usefile=False):
          raise ValueError(f"The maximum temperature for this system is 100 degrees celsius")
 
     # we get the step response near to operation point
-    t, u, y = read_csv_file3(PATH_DEFAULT + 'Thermal_step_open_exp.csv')
+    t, u, y = read_csv_file3(PATH_DATA + 'Thermal_step_open_exp.csv')
 
     # we interpolate the experimental response
     interp = PchipInterpolator(t, y)
@@ -772,7 +772,6 @@ def get_fomodel_step(system, yop=50, t1=400, usefile=False):
 
     # settings for the upper axes, depicting the model and speed data
     ay.set_title('Estimated first order model for UNThermal')
-    ay.set_ylabel('Speed (Degrees/s)')
     ay.grid(True);
     ay.grid(color='#1a1a1a40', linestyle='--', linewidth=0.25)
     ay.set_facecolor('#f4eed7')
@@ -790,7 +789,7 @@ def get_fomodel_step(system, yop=50, t1=400, usefile=False):
     au.text(300, ua + 2, r'$\Delta_u=%0.2f$'%delta_u, fontsize=14, color="#00aa00",
              ha='center', va='bottom', bbox=box)
     au.set_xlabel('Time (seconds)')
-    ay.set_ylabel('Temperature $~^oC$')
+    ay.set_ylabel('Temperature ($~^oC$)')
 
     line_exp, = ay.plot(t, y, color="#0088aa", linewidth=1.5, linestyle=(0, (1, 1)))
     line_mod, = ay.plot(tm, ym, color="#ff0066", linewidth=1.5, )

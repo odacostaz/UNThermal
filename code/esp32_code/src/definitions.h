@@ -41,10 +41,9 @@
 #define USER_SYS_STEP_OPEN         "/thermal/user/thermal_" PLANT_NUMBER "/step_open"           //6
 #define USER_SYS_STEP_OPEN         "/thermal/user/thermal_" PLANT_NUMBER "/step_open"           //6
 #define USER_SYS_SET_GENCON        "/thermal/user/thermal_" PLANT_NUMBER "/set_gencon"          //7
-#define USER_SYS_PROFILE_CLOSED    "/thermal/user/thermal_" PLANT_NUMBER "/prof_closed"
+#define USER_SYS_PROFILE_CLOSED    "/thermal/user/thermal_" PLANT_NUMBER "/prof_closed"         //8
 
 // Integer definitions of topics to avoid comparison with strings, which is more computationally expensive
-
 
 #define DEFAULT_TOPIC                  0
 #define USER_SYS_STEP_CLOSED_INT       1
@@ -60,7 +59,6 @@
 #define GENERAL_CONTROLLER_2P          1
 #define PID_CONTROLLER                 2
 
-// Maximum order for the controler
 
 
 
@@ -89,7 +87,6 @@ const uint8_t gamma8[] = {
 
 //  percent of control signal in the operation point
 const float percent2pwm = (float) (4095.0/100.0);
-
 
 
 // Button's configuration

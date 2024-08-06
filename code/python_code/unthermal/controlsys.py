@@ -149,7 +149,7 @@ def step_closed(system, r0=0 , r1=100, t0=0 ,  t1=1):
     ay.set_xlim(0, t0 + t1  - sampling_time)
 
     #Setting the limits of figure
-    py = 0.4
+    py = 0.5
     delta_r = abs(r1 - r0)
     ylimits = [r0 , r1]
     ylimits = [np.min(ylimits)- py * delta_r , np.max(ylimits) + py * delta_r]
@@ -248,8 +248,8 @@ def stairs_closed(system, stairs=[40, 50, 60], duration=50):
         fig, (ay, au) = plt.subplots(nrows=2, ncols=1, width_ratios=[1], height_ratios=[4, 1], figsize=(10, 6))
     display_immediately(fig)
 
-    # display config
-    fig.set_facecolor('#ffffff')  # '#b7c4c8f0')
+    # display configuration
+    fig.set_facecolor('#ffffff')
 
     # settings for the upper axes, depicting the model and speed data
     ay.set_title(

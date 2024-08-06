@@ -520,15 +520,15 @@ void  computeReference() {
    switch (codeTopic) {
         case DEFAULT_TOPIC:
             if (touchRead(BUTTON_MINUS) > THRESHOLD_MINUS){
-                reference = constrain(reference - 5,20,90);
+                reference = constrain(reference - 5,35,80);
             }
             if (touchRead(BUTTON_PLUS) > THRESHOLD_PLUS){
-                reference = constrain(reference + 5,20,90);
+                reference = constrain(reference + 5,35,80);
             }
 
 
-            displayLed(y, 20, 90, 0.25, 0);
-            displayLed(reference, 20, 90, 0.25, 1);
+            displayLed(y, 40, 80, 0.3, 0);
+            displayLed(reference, 40, 80, 0.3, 1);
             displayLed(usat, 0, 100, 0.2, 2);
             break;
 
@@ -790,14 +790,19 @@ static void identifyTask(void *pvParameters) {
             } else {
                 usat = uf - high_val;
             }
+            wattsToPlant(usat);
             displayLed(usat, uf - 1.2*high_val, uf + 1.2*high_val, 0.25, 2);
             displayLed(y, reference - 5, reference + 5,  0.25,0);
             displayLed(reference, reference - 5, reference + 5,  0.25,1);
-            wattsToPlant(usat);
+
         }
         else if ((np <= total_time) & (codeTopic == USER_SYS_STEP_OPEN_INT)) {
             usat = high_val + uf;
             wattsToPlant(usat);
+            displayLed(usat, uf - 1.2*high_val, uf + 1.2*high_val, 0.25, 2);
+            displayLed(y, reference - 5, 1.23*(uf + high_val) + 30,  0.25,0);
+            displayLed(reference, reference - 5, 1.23*(uf + high_val) + 30,  0.25,1);
+
         }
         else if (np > total_time) {
             wattsToPlant(0);
