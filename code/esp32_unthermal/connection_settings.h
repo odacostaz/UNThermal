@@ -1,5 +1,4 @@
-
-
+// Definitions for connection settings
 
 #define PLANT_NUMBER  "1102"                     // set the number of your plant
 #define THINGNAME "unthermal_" PLANT_NUMBER
