@@ -1,4 +1,4 @@
-// Definitions for the thermal systeme
+// Definitions for the thermal system
 // Created by LB on 1/18/24.
 #include <stdlib.h>
 

@@ -229,10 +229,10 @@ void connectWiFi(){
     WiFi.mode(WIFI_STA);
     #ifdef UNALCONNECTION
         WiFi.begin(WIFI_SSID);
-        printf("connecting to UNAL network, please wait\n");
+        printf("\nConnecting to UNAL network, please wait\n");
     #else    
         WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-        printf("connecting to WiFi network, please wait\n", );
+        printf("Connecting to WiFi network %s, please wait\n", WIFI_SSID);
     #endif
 
     while (WiFi.status() != WL_CONNECTED) {
