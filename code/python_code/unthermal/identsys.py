@@ -733,10 +733,10 @@ def get_fomodel_step(system, yop=50, t1=400, usefile=False):
 
     # We take the mean of the roots in the event that the noise produces multiple values.
 
-    t1e  = np.mean(roots_t1e)
-    t2e  =  np.mean(roots_t2e)
+    t1e  = np.max(roots_t1e)
+    t2e  = np.mean(roots_t2e)
     tau3 = np.mean(roots_t3e)
-    t4e =  np.mean(roots_t4e)
+    t4e =  np.min(roots_t4e)
 
     # We obtain 4 estimates of tau in 4 different points
     tau1 = t1e / 0.2231
