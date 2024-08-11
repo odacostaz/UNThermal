@@ -106,6 +106,7 @@ def step_closed_staticgain(system, r0=40, r1=40, t0=0, t1=60):
         try:
             message = q.get(True, 20)
         except:
+            system.disconnect()
             raise TimeoutError("The connection has been lost. Please try again")
 
         decoded_message = str(message.payload.decode("utf-8"))
@@ -276,6 +277,7 @@ def prbs_open(system, yop=50, amplitude=4, stab_time=60, uee_time=10, divider = 
         try:
             message = q.get(True, 20)
         except:
+            system.disconnect()
             raise TimeoutError("The connection has been lost. Please try again")
 
 
@@ -604,6 +606,7 @@ def step_open(system, yop=50, amplitude=5, t1=300, stab_time=89, uee_time=10):
         try:
             message = q.get(True, 20)
         except:
+            system.disconnect()
             raise TimeoutError("The connection has been lost. Please try again")
 
         decoded_message = str(message.payload.decode("utf-8"))
@@ -678,14 +681,14 @@ def read_fo_model():
     return G
 
 
-def get_fomodel_step(system, yop=50, t1=400, usefile=False):
+def get_fomodel_step(system, yop=50, t1=350, usefile=False):
     """This function allows to obtain the first order model
     from the step response"""
 
 
     if  not usefile:
         try:
-            step_open(system, yop=yop, amplitude=5, t1=t1, stab_time=89, uee_time=10)
+            step_open(system, yop=yop, amplitude=5, t1=t1, stab_time=50, uee_time=10)
         except:
             print("The connection has been lost. We use partial data.")
 

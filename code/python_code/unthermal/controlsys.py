@@ -178,6 +178,7 @@ def step_closed(system, r0=0 , r1=100, t0=0 ,  t1=1):
         try:
             message = q.get(True, 20)
         except:
+            system.disconnect()
             raise TimeoutError("The connection has been lost. Please try again")
 
         decoded_message = str(message.payload.decode("utf-8"))
@@ -281,6 +282,7 @@ def stairs_closed(system, stairs=[40, 50, 60], duration=50):
         try:
             message = q.get(True, 20)
         except:
+            system.disconnect()
             raise TimeoutError("The connection has been lost. Please try again")
 
         decoded_message = str(message.payload.decode("utf-8"))
@@ -549,6 +551,7 @@ def profile_closed(system, timevalues = [0, 50, 100 , 150], refvalues = [40, 50,
         try:
             message = q.get(True, 20)
         except:
+            system.disconnect()
             raise TimeoutError("The connection has been lost. Please try again")
 
         decoded_message = str(message.payload.decode("utf-8"))
