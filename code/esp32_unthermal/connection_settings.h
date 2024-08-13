@@ -1,4 +1,4 @@
-#define PLANT_NUMBER  "PC-T-01"                 // set the number of your plant
+#define PLANT_NUMBER  "PC-T-06"                 // set the number of your plant
 #define THINGNAME "Thermal_" PLANT_NUMBER
 const char WIFI_SSID[] = "UNAL";             // set your WiFi network
 const char WIFI_PASSWORD[] = "UNAL";         // set the password of your WiFi network
