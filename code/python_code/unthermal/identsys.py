@@ -564,8 +564,8 @@ def step_open(system, yop=50, amplitude=5, t1=300, stab_time=89, uee_time=10):
     b = 24.750915901094388
     uf_est = (op_point - b) / m
     percent = 0.2
-    ymax = op_point + m* amplitude + 2
-    ymin = op_point - 2
+    ymax = op_point + m* amplitude + 7
+    ymin = op_point - 7
     umax = uf_est + (1 + percent) * amplitude
     umin =  np.min([0, uf_est - (1 + percent) * amplitude])
     points = stab_points + uee_points + points_high
