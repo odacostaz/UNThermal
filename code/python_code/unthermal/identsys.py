@@ -631,7 +631,6 @@ def step_open(system, yop=50, amplitude=5, t1=300, stab_time=89, uee_time=10):
                            fontsize=FONT_SIZE, loc="upper left")
                 uax.legend([line_u], [f'$u(t):$ {u_curr: 0.1f}'], fontsize=FONT_SIZE)
                 if n == stab_points + uee_points:
-                    uax.set_ylim(u_curr - 5, u_curr + 5)
                     tt.append(t_curr)
                     yt.append(y_curr)
                     ut.append(u_curr)
@@ -724,7 +723,7 @@ def get_fomodel_step(system, yop=50, t1=350, usefile=False):
     y_t1e  = ya + 0.2 * delta_y
     y_t2e  = ya + 0.4 * delta_y
     y_t3e  = ya + 0.63212 * delta_y
-    y_t4e  = ya + 0.8 * delta_y
+    #y_t4e  = ya + 0.8 * delta_y
 
     # with this value, we can approximate the value of tau
     # solving the inverse equation using the interpolator
@@ -732,22 +731,22 @@ def get_fomodel_step(system, yop=50, t1=350, usefile=False):
     roots_t1e = interp.solve(y_t1e, extrapolate=False)
     roots_t2e = interp.solve(y_t2e, extrapolate=False)
     roots_t3e = interp.solve(y_t3e, extrapolate=False)
-    roots_t4e = interp.solve(y_t4e, extrapolate=False)
+    #roots_t4e = interp.solve(y_t4e, extrapolate=False)
 
     # We take the mean of the roots in the event that the noise produces multiple values.
 
     t1e  = np.max(roots_t1e)
     t2e  = np.mean(roots_t2e)
     tau3 = np.mean(roots_t3e)
-    t4e =  np.min(roots_t4e)
+    #t4e =  np.min(roots_t4e)
 
     # We obtain 4 estimates of tau in 4 different points
     tau1 = t1e / 0.2231
     tau2 = t2e / 0.5108
-    tau4 = t4e /1.6094
+    #tau4 = t4e /1.6094
 
     # we average the 4 estimated values for obtaining tau
-    tau = (tau1 + tau2 + tau3 + tau4)/4
+    tau = (tau1 + tau2 + tau3)/3
 
     # we build the model
     G = ct.tf(alpha, [tau, 1])
