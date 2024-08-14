@@ -631,6 +631,8 @@ def step_open(system, yop=50, amplitude=5, t1=300, stab_time=89, uee_time=10):
                            fontsize=FONT_SIZE, loc="upper left")
                 uax.legend([line_u], [f'$u(t):$ {u_curr: 0.1f}'], fontsize=FONT_SIZE)
                 if n == stab_points + uee_points:
+                    uax.set_ylim(ucurr-8, u_curr + 8)
+                    fig.canvas.draw()
                     tt.append(t_curr)
                     yt.append(y_curr)
                     ut.append(u_curr)
@@ -680,7 +682,7 @@ def read_fo_model():
     return G
 
 
-def get_fomodel_step(system, yop=50, t1=400, usefile=False):
+def get_fomodel_step(system, yop=50, t1=350, usefile=False):
     """This function allows to obtain the first order model
     from the step response"""
 
