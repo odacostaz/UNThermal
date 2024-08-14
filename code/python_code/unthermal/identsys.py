@@ -749,7 +749,7 @@ def get_fomodel_step(system, yop=50, t1=350, usefile=False):
     tau4 = t4e /1.6094
 
     # we average the 4 estimated values for obtaining tau
-    tau = (tau1 + tau2 + tau3)/3
+    tau = (tau1 + tau2 + tau3 + tau4)/4
 
     # we build the model
     G = ct.tf(alpha, [tau, 1])
@@ -780,14 +780,14 @@ def get_fomodel_step(system, yop=50, t1=350, usefile=False):
     ay.grid(True);
     ay.grid(color='#1a1a1a40', linestyle='--', linewidth=0.25)
     ay.set_facecolor('#f4eed7')
-    ay.set_xlim(0, t1)
+    ay.set_xlim(0, tend)
     box = dict(boxstyle='round,pad=0.5', facecolor='white', edgecolor='white', alpha=0.5)
     ay.text(300, (ya+yb)/2, r'$\Delta_{y,e}=%0.2f$'%delta_y, fontsize=14, color='#ff0066',
              ha='center', va='bottom', bbox=box)
     ay.text( tau + 10, ya + 0.63212*delta_y,  r'$\tau = %0.2f$'%tau, fontsize=14, color='#ff0066')
 
     # settings for the lower, depicting the input
-    au.set_xlim(0, t1)
+    au.set_xlim(0, tend)
     au.grid(True);
     au.set_facecolor('#d7f4ee')
     au.grid(color='#1a1a1a40', linestyle='--', linewidth=0.25)
