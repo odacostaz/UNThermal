@@ -522,7 +522,7 @@ def get_models_prbs(system, yop = 50, amplitude= 4, usefile = False):
 
     return G1, G2, tau2
 
-def step_open(system, yop=50, amplitude=5, t1=300, stab_time=89, uee_time=10):
+def step_open(system, yop=50, amplitude=5, t1=350, stab_time=89, uee_time=10):
     def step_message(system, userdata, message):
         q.put(message)
 
