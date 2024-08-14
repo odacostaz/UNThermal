@@ -709,9 +709,10 @@ def get_fomodel_step(system, yop=50, t1=350, usefile=False):
     # we estimate the steady state temperature achieved during the initial value of step.
     ya = y[0]
     ua = u[0]
+    tend = t[-1]
 
     # we estimate the steady state temperature achieved during the final value of the step.
-    tb = [t0 for t0 in t if t0 > t1-10 and t0 < t1]
+    tb = [t0 for t0 in t if t0 > tend-10 and t0 < tend]
     yb = np.mean(interp(tb))
     ub = u[-1]
 
@@ -733,19 +734,19 @@ def get_fomodel_step(system, yop=50, t1=350, usefile=False):
     roots_t1e = interp.solve(y_t1e, extrapolate=False)
     roots_t2e = interp.solve(y_t2e, extrapolate=False)
     roots_t3e = interp.solve(y_t3e, extrapolate=False)
-    #roots_t4e = interp.solve(y_t4e, extrapolate=False)
+    roots_t4e = interp.solve(y_t4e, extrapolate=False)
 
     # We take the mean of the roots in the event that the noise produces multiple values.
 
     t1e  = np.max(roots_t1e)
     t2e  = np.mean(roots_t2e)
     tau3 = np.mean(roots_t3e)
-    #t4e =  np.min(roots_t4e)
+    t4e =  np.min(roots_t4e)
 
     # We obtain 4 estimates of tau in 4 different points
     tau1 = t1e / 0.2231
     tau2 = t2e / 0.5108
-    #tau4 = t4e /1.6094
+    tau4 = t4e /1.6094
 
     # we average the 4 estimated values for obtaining tau
     tau = (tau1 + tau2 + tau3)/3
