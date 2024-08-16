@@ -223,26 +223,7 @@ void wattsToPlant(float watts){
 
 
 
-void connectWiFi(){
-  
-    WiFi.disconnect(true);
-    WiFi.mode(WIFI_STA);
-    #ifdef UNALCONNECTION
-        WiFi.begin(WIFI_SSID);
-        printf("\nPlant %s is connecting to UNAL network, please wait\n", PLANT_NUMBER);
-    #else    
-        WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-        printf("\nPlant %s is connecting to WiFi network %s, please wait\n", PLANT_NUMBER, WIFI_SSID);
-    #endif
 
-    while (WiFi.status() != WL_CONNECTED) {
-        Serial.print(".");
-        vTaskDelay(pdMS_TO_TICKS(250));
-    }
-    printf("\n");
-    printf("Connected to WIFI through IP: %s \n", WiFi.localIP().toString());
-
-}
 
 
 
@@ -266,6 +247,45 @@ void connectMqtt()
         printf("Failed MQTT connection code %d \n try again in 2 seconds\n", mqttClient.state());
     }
 }
+
+
+void connectWiFi(){
+    WiFi.disconnect(true);
+    WiFi.mode(WIFI_STA);
+#ifdef UNALCONNECTION
+    WiFi.begin(WIFI_SSID);
+        printf("\nPlant %s is connecting to UNAL network, please wait\n", PLANT_NUMBER);
+#else
+    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+    printf("Plant %s is connecting to %s network , please wait\n", PLANT_NUMBER, WIFI_SSID);
+#endif
+
+    while (WiFi.status() != WL_CONNECTED) {
+        Serial.print(".");
+        vTaskDelay(pdMS_TO_TICKS(250));
+    }
+    printf("\n");
+    printf("Connected to WIFI through IP: %s \n", WiFi.localIP().toString());
+
+}
+
+
+
+void handleConnections(void *pvParameters) {
+    for (;;) {
+        if (WiFi.status() != WL_CONNECTED) {
+            connectWiFi();
+            if (!mqttClient.connected()) {
+                vTaskDelay(500);
+                connectMqtt();
+            }
+        }
+
+        mqttClient.loop();
+        vTaskDelay(pdMS_TO_TICKS(500));
+    }
+}
+
 
 
 // This function suspend all  controlling tasks
@@ -874,19 +894,6 @@ static void publishStateTask (void *pvParameters) {
 //}
 
 
-void handleConnections(void *pvParameters) {
-    for (;;) {
-        if (WiFi.status() != WL_CONNECTED) {
-            connectWiFi();
-        }
-        if (!mqttClient.connected()) {
-            vTaskDelay(2000);
-            connectMqtt();
-        }
-        mqttClient.loop();
-        vTaskDelay(pdMS_TO_TICKS(500));
-    }
-}
 
 
 
