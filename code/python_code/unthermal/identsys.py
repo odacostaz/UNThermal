@@ -381,7 +381,7 @@ def get_models_prbs(system, yop = 50, amplitude= 4, usefile = False):
 
     if not usefile:
         try:
-            prbs_open(system, yop=yop, amplitude=amplitude, stab_time=89, uee_time=10, divider=20)
+            prbs_open(system, yop=yop, amplitude=amplitude, stab_time=50, uee_time=10, divider=20)
         except:
             print("The connection has been lost. We use partial data.")
 
