@@ -161,8 +161,9 @@ def get_static_model(system, step = 5, usefile= False):
         uee = []
         exp = []
         y_test = np.arange(40,100, step)
-        u = []
+
         for yi in y_test:
+            u = []
             while not u:
                 try:
                     u, y = step_closed_staticgain(system, r0=yi, r1=yi, t0=0, t1=60)
