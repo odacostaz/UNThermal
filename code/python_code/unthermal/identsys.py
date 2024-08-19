@@ -574,8 +574,9 @@ def step_open(system, yop=50, amplitude=5, t1=350, stab_time=89, uee_time=10):
     # display config
     with plt.ioff():
         fig, (yax, uax) = plt.subplots(nrows=2, ncols=1, width_ratios=[1], height_ratios=[3, 1], figsize=(10, 6))
-    display(fig)
-    display_immediately(fig)
+    #display(fig)
+
+    #display_immediately(fig)
 
     # display config
     fig.set_facecolor('#ffffff')
@@ -600,7 +601,7 @@ def step_open(system, yop=50, amplitude=5, t1=350, stab_time=89, uee_time=10):
     line_u, = uax.plot(t, u, color="#00d4aa")
     line_yt, = yax.plot(t, yt, color="#d40055")
     line_ut, = uax.plot(t, ut, color="#338000")
-    fig.canvas.draw()
+    display(fig)
 
 
     n = -1
