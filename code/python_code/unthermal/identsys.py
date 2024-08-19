@@ -600,6 +600,8 @@ def step_open(system, yop=50, amplitude=5, t1=350, stab_time=89, uee_time=10):
     line_yt, = yax.plot(t, yt, color="#d40055")
     line_ut, = uax.plot(t, ut, color="#338000")
     fig.canvas.draw()
+    display(fig)
+
     n = -1
     tstep = sampling_time * (stab_points + uee_points)
     sync = False
@@ -660,6 +662,7 @@ def step_open(system, yop=50, amplitude=5, t1=350, stab_time=89, uee_time=10):
                            header='t,u,y')
             fig.canvas.draw()
             time.sleep(0.1)
+            display(fig)
 
 
     system.disconnect()
