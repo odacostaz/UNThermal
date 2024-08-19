@@ -682,7 +682,7 @@ def read_fo_model():
     return G
 
 
-def get_fomodel_step(system, yop=50, t1=350, usefile=False):
+def get_fomodel_step(system, yop=50, t1=360, usefile=False):
     """This function allows to obtain the first order model
     from the step response"""
 
