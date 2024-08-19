@@ -580,16 +580,17 @@ def step_open(system, yop=50, amplitude=5, t1=350, stab_time=89, uee_time=10):
     # display config
     fig.set_facecolor('#ffffff')
 
-    yax.set_title(f'Open loop step experiment with {points_high:d} samples and a duration of {(points_high -1) * sampling_time: 0.2f} seconds')
-    yax.set_ylabel(r'Temperature ($~^oC$)')
+    yax.set_title(f'Open loop step experiment with {points_high:d} samples'
+                  f' and a duration of {(points_high -1) * sampling_time: 0.2f} seconds', fontsize=FONT_SIZE)
+    yax.set_ylabel(r'Temperature ($~^oC$)',fontsize=FONT_SIZE)
     yax.grid(True);
     yax.grid(color='#1a1a1a40', linestyle='--', linewidth=0.25)
     yax.set_facecolor('#f4eed7')
     yax.set_xlim(0, sampling_time * points)
     yax.set_ylim(ymin, ymax)
-    yax.set_xlabel('Time (s)')
-    uax.set_xlabel('Time (s)')
-    uax.set_ylabel(r'Power Input ($\%$)')
+    yax.set_xlabel('Time (s)', fontsize=FONT_SIZE)
+    uax.set_xlabel('Time (s)', fontsize=FONT_SIZE)
+    uax.set_ylabel(r'Power Input ($\%$)', fontsize=FONT_SIZE)
     uax.grid(True);
     uax.set_facecolor('#d7f4ee')
     uax.grid(color='#1a1a1a40', linestyle='--', linewidth=0.25)
@@ -600,8 +601,6 @@ def step_open(system, yop=50, amplitude=5, t1=350, stab_time=89, uee_time=10):
     line_u, = uax.plot(t, u, color="#00d4aa")
     line_yt, = yax.plot(t, yt, color="#d40055")
     line_ut, = uax.plot(t, ut, color="#338000")
-    plt.draw()
-    time.sleep(0.1)
     display_immediately(fig)
 
 
