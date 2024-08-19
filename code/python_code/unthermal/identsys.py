@@ -601,8 +601,9 @@ def step_open(system, yop=50, amplitude=5, t1=350, stab_time=89, uee_time=10):
     line_u, = uax.plot(t, u, color="#00d4aa")
     line_yt, = yax.plot(t, yt, color="#d40055")
     line_ut, = uax.plot(t, ut, color="#338000")
-    fig.canvas.layout.width = '120%'
-    fig.canvas.layout.height = '120%'
+    fig.canvas.layout.min_width = '400px'
+    fig.canvas.layout.flex = '1 1 auto'
+    fig.canvas.layout.width = 'auto'
     display_immediately(fig)
 
 
