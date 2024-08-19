@@ -194,7 +194,7 @@ def get_static_model(system, step = 5, usefile= False):
     ax.legend([line_exp, line_mod], ['Data', strmodel], fontsize=12)
     fig.canvas.draw()
     system.disconnect()
-    return
+    return uee, yee
 
 
 
