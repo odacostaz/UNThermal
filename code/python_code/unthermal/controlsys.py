@@ -63,6 +63,7 @@ def display_immediately(fig):
     canvas._handle_message(canvas, {'type': 'initialized'}, [])
     canvas._handle_message(canvas, {'type': 'draw'}, [])
 
+
 def set_reference(system, ref_value=50):
     ref_hex = float2hex(ref_value)
     topic_pub = system.codes["USER_SYS_SET_REF"]
