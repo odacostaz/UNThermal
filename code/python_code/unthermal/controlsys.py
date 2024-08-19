@@ -57,7 +57,6 @@ def time2hex(time_points):
 
 def display_immediately(fig):
     canvas = fig.canvas
-    display(fig)
     display(canvas)
     canvas._handle_message(canvas, {'type': 'send_image_mode'}, [])
     canvas._handle_message(canvas, {'type': 'refresh'}, [])
