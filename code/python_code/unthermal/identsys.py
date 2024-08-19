@@ -161,20 +161,20 @@ def get_static_model(system, step = 5, usefile= False):
         uee = []
         exp = []
         y_test = np.arange(40,100, step)
+        u = []
         for yi in y_test:
-            try:
-                u, y = step_closed_staticgain(system, r0=yi, r1=yi, t0=0, t1=60)
-            except:
-                time.sleep(5)
-                u, y = step_closed_staticgain(system, r0=yi, r1=yi, t0=0, t1=60)
-            if u:
-                yf = np.mean(y[-12:])
-                uf = np.mean(u[-12:])
-                exp.append([uf, yf])
-                yee.append(yf)
-                uee.append(uf)
-                line_exp.set_data(uee, yee)
-                fig.canvas.draw()
+            while not u:
+                try:
+                    u, y = step_closed_staticgain(system, r0=yi, r1=yi, t0=0, t1=60)
+                except:
+                    time.sleep(5)
+            yf = np.mean(y[-12:])
+            uf = np.mean(u[-12:])
+            exp.append([uf, yf])
+            yee.append(yf)
+            uee.append(uf)
+            line_exp.set_data(uee, yee)
+            fig.canvas.draw()
             time.sleep(1)
 
         np.savetxt(PATH_DEFAULT + "Thermal_static_gain_response.csv", exp, delimiter=",", fmt="%0.8f", comments="",
