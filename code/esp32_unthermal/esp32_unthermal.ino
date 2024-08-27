@@ -275,12 +275,11 @@ void handleConnections(void *pvParameters) {
     for (;;) {
         if (WiFi.status() != WL_CONNECTED) {
             connectWiFi();
-            if (!mqttClient.connected()) {
-                vTaskDelay(500);
-                connectMqtt();
-            }
         }
-
+        if (!mqttClient.connected()) {
+            vTaskDelay(2000);
+            connectMqtt();
+        }
         mqttClient.loop();
         vTaskDelay(pdMS_TO_TICKS(500));
     }
@@ -548,10 +547,10 @@ void  computeReference() {
    switch (codeTopic) {
         case DEFAULT_TOPIC:
             if (touchRead(BUTTON_MINUS) > THRESHOLD_MINUS){
-                reference = constrain(reference - 5,35,80);
+                reference = constrain(reference - 5,40,90);
             }
             if (touchRead(BUTTON_PLUS) > THRESHOLD_PLUS){
-                reference = constrain(reference + 5,35,80);
+                reference = constrain(reference + 5,40,90);
             }
 
 
@@ -763,9 +762,9 @@ static void identifyTask(void *pvParameters) {
     const TickType_t taskPeriod = (long) (1000 * h);
     const uint64_t pbrs = 0x57E08629E8E4B766;
     static uint bitShift = 0;
-    float kp_id = 16.796;
-    float beta_id = 0.5;
-    float bi = 2 * h;
+    float kp_id = 11.8552;
+    float beta_id = 0;
+    float bi = 2.714634 * h;
     bool  currBit;
     float PA;          //  proportional action
     float uf;          //  filtered control signal
