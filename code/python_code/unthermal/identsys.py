@@ -3,7 +3,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.integrate import odeint
-from scipy.optimize import minimize
+from scipy.optimize import minimize, lsq_linear
 from scipy.interpolate import interp1d, PchipInterpolator
 
 from scipy.stats import linregress
@@ -39,7 +39,7 @@ def read_csv_file3(filepath = PATH_DATA + 'Thermal_prbs_open_exp.csv'):
                u.append(float(row[1]))
                y.append(float(row[2]))
             num_line += 1
-        return t, u, y
+        return np.array(t), np.array(u), np.array(y)
 
 def read_csv_file2(filepath = PATH_DATA + 'Thermal_static_gain_response.csv'):
     with open(filepath, newline='') as file:
@@ -398,9 +398,6 @@ def get_models_prbs(system, yop = 50, amplitude= 4, usefile = False):
     ym_interp = interp1d(t, ym)
     t_interp = np.arange(0, t[-1] + sampling_time, sampling_time)
 
-
-
-
     """Now we obtain the initial parameters for the model
                         alpha
               G1(s) = -----------
@@ -417,11 +414,11 @@ def get_models_prbs(system, yop = 50, amplitude= 4, usefile = False):
     tau2_0 = 2
     x02 = [alpha_0, tau1_0, tau2_0]
     x01 = [alpha_0, tau1_0]
-      # # These are the bounds for alpha, tau1 and tau2
-
+    
+    #These are the bounds for alpha, tau1 and tau2
     bounds2 = [(0.8, 1.5), (1 , 150), (0.4, 10)]
     bounds1 = bounds2[0:2]
-    #
+    
     # Now we run the optimization algorithm
     print(f'Starting optimization for first order model...\n\t Initial cost function: {objective_fo(x01):.2f}' )
     solution = minimize(objective_fo, x0=x01, bounds= bounds1)
@@ -523,7 +520,7 @@ def get_models_prbs(system, yop = 50, amplitude= 4, usefile = False):
 
     return G1, G2, tau2
 
-def step_open(system, yop=50, amplitude=5, t1=350, stab_time=89, uee_time=10):
+def step_open(system, yop=50, amplitude=5, t1=350, stab_time=60, uee_time=10):
     def step_message(system, userdata, message):
         q.put(message)
 
@@ -605,7 +602,7 @@ def step_open(system, yop=50, amplitude=5, t1=350, stab_time=89, uee_time=10):
 
 
     n = -1
-    tstep = sampling_time * (stab_points + uee_points)
+    tstep = sampling_time * (stab_points + uee_points + 1)
     sync = False
     while n < points:
         try:
@@ -623,7 +620,7 @@ def step_open(system, yop=50, amplitude=5, t1=350, stab_time=89, uee_time=10):
             sync = True
 
         if sync:
-            if n <= stab_points + uee_points:
+            if n <= stab_points:
                 t_curr = n*sampling_time
                 t.append(t_curr)
                 y_curr = hex2float(msg_dict["y"])
@@ -635,13 +632,10 @@ def step_open(system, yop=50, amplitude=5, t1=350, stab_time=89, uee_time=10):
                 yax.legend([line_y], [ f'Current Temperature: {y_curr: 0.2f}$~^oC$'],
                            fontsize=FONT_SIZE, loc="upper left")
                 uax.legend([line_u], [f'$u(t):$ {u_curr: 0.1f}'], fontsize=FONT_SIZE)
-                if n == stab_points + uee_points:
-                    uax.set_ylim(u_curr-3, u_curr + 8)
+                if n == stab_points:
+                    uax.set_ylim(u_curr-3, u_curr + 20)
                     fig.canvas.draw()
-                    tt.append(t_curr)
-                    yt.append(y_curr)
-                    ut.append(u_curr)
-                    exp.append([0, u_curr, y_curr])
+  
             else:
                 tt_curr = n * sampling_time
                 tt.append(tt_curr)
@@ -687,14 +681,63 @@ def read_fo_model():
     return G
 
 
-def get_fomodel_step(system, yop=50, t1=360, usefile=False):
-    """This function allows to obtain the first order model
-    from the step response"""
+def get_fomodel_step(system, yop=50, t1=360, amplitude =10, usefile=False):
+    """
+       Obtains the first order model plus delay (FOTD) from the experimental step response of a system.
+
+       This function obtains (or reads) experimental step response data from a system, processes it, and extracts the
+       first order time delay (FOTD) model parameters: the system gain (`alpha`), time constant (`tau`), and
+       delay (`L`). It can either use real-time data from the system or read from a previously saved file.
+
+       Parameters
+       ----------
+       system : ThermalSystemIoT object
+           The IoT system object that the experiment will be run on or from which data will be read.
+       yop : float, optional
+           The initial output parameter, default is 50 (degrees Celsius).
+       t1 : int, optional
+           The duration of the experiment in seconds, default is 360.
+       amplitude : int, optional
+           The amplitude of the step input change, default is 10.
+       usefile : bool, optional
+           If True, data is read from a file instead of conducting a live experiment. Default is False.
+
+       Returns
+       -------
+       alpha : float
+           The gain of the system.
+       tau : float
+           The time constant of the system.
+       L : float
+           The delay of the system.
+
+       Notes
+       -----
+       The first-order time delay (FOTD) model of a system is typically represented by the following equation:
+
+       .. math::
+
+          G(s) = \frac{\alpha}{\tau s + 1} e^{-Ls}
+
+       where:
+       - :math:`\alpha` is the system gain,
+       - :math:`\tau` is the time constant, and
+       - :math:`L` is the delay.
+       """
+
+    def compute_step_response(t, alpha, tau, L, delta_u, ya):
+    # this function computes the atep responseof a FOTD system given the parameters, alpha, tau and L
+        ym = []
+        for ti in t:
+            yi = alpha * delta_u * (1 - np.exp(-np.max([0, ti-L]) / tau)) + ya
+            ym.append(yi)
+        return ym
+
 
 
     if  not usefile:
         try:
-            step_open(system, yop=yop, amplitude=5, t1=t1, stab_time=50, uee_time=10)
+            step_open(system, yop=yop, amplitude=amplitude, t1=t1, stab_time=60, uee_time=10)
         except:
             print("The connection has been lost. We use partial data.")
 
@@ -705,66 +748,66 @@ def get_fomodel_step(system, yop=50, t1=360, usefile=False):
     if  yop >= 100:
          raise ValueError(f"The maximum temperature for this system is 100 degrees celsius")
 
-    # we get the step response near to operation point
-    t, u, y = read_csv_file3(PATH_DATA + 'Thermal_step_open_exp.csv')
+    # Here we read the experiment results
+    t, u, y = read_csv_file3(filepath = PATH_DATA + '/Thermal_step_open_exp.csv')
 
-    # we interpolate the experimental response
-    interp = PchipInterpolator(t, y)
-
-    # we estimate the steady state temperature achieved during the initial value of step.
-    ya = y[0]
-    ua = u[0]
+    ind_step = np.diff(u).argmax()
     tend = t[-1]
+    # This is the initial step value before the change
+    ua = u[ind_step]
 
-    # we estimate the steady state temperature achieved during the final value of the step.
-    tb = [t0 for t0 in t if t0 > tend-10 and t0 < tend]
-    yb = np.mean(interp(tb))
+    # The last point is the final step value
     ub = u[-1]
+
+    # We calculate the initial temperature value before the step change
+    # as the average of the 50 points before the change
+    ya = np.mean(y[ind_step-10:ind_step+1])
+
+    # For the final temperature value, we take an average of the last 10 values
+    yb = np.mean(y[-10:])
+
+    # We calculate the net change in the step
+    delta_u = ub - ua
+
+    # We calculate the change in steady-state output value
+    delta_y = yb - ya
+
 
     # we calculate the gain of the plant
     delta_y = yb - ya
     delta_u = ub - ua
+  
+
+     
+    # We compute the normalized response
+    y_norm = (y - ya) / delta_y
+
+    # we set the selected points in the normalized curve
+    yi_points = [0.05, 0.1, 0.2, 0.3]
+    ti_points = np.interp(yi_points, y_norm, t) 
+
+
+    # this is the matrix for solving the LSQ system
+    A = np.array([
+        [1, -np.log(1-yi_points[0])],
+        [1, -np.log(1-yi_points[1])],
+        [1, -np.log(1-yi_points[2])],
+        [1, -np.log(1-yi_points[3])],
+
+    ])
+
+    # we solve the LSQ allowing only positive solutions
+    limits = [(0,1),(10,100)]
+    p = lsq_linear(A, ti_points, bounds=limits)
+
+    # we extract the parameter
+    L, tau = p.x
+
+    #compute alpha
     alpha = delta_y / delta_u
 
-    #  we use four point method for calculating the step response
-
-    y_t1e  = ya + 0.2 * delta_y
-    y_t2e  = ya + 0.4 * delta_y
-    y_t3e  = ya + 0.63212 * delta_y
-    y_t4e  = ya + 0.8 * delta_y
-
-    # with this value, we can approximate the value of tau
-    # solving the inverse equation using the interpolator
-
-    roots_t1e = interp.solve(y_t1e, extrapolate=False)
-    roots_t2e = interp.solve(y_t2e, extrapolate=False)
-    roots_t3e = interp.solve(y_t3e, extrapolate=False)
-    roots_t4e = interp.solve(y_t4e, extrapolate=False)
-
-    # We take the mean of the roots in the event that the noise produces multiple values.
-
-    t1e  = np.max(roots_t1e)
-    t2e  = np.mean(roots_t2e)
-    tau3 = np.mean(roots_t3e)
-    t4e =  np.min(roots_t4e)
-
-    # We obtain 4 estimates of tau in 4 different points
-    tau1 = t1e / 0.2231
-    tau2 = t2e / 0.5108
-    tau4 = t4e /1.6094
-
-    # we average the 4 estimated values for obtaining tau
-    tau = (tau1 + tau2 + tau3 + tau4)/4
-
-    # we build the model
-    G = ct.tf(alpha, [tau, 1])
-
-    # we calculate the step response from the model
-    um = np.array(u) - u[0]  # it is required to compute the LTI model with a signal starting in 0.
-    tm, ym = ct.forced_response(G, t, um)
-
-    # we add the initial speed to compare
-    ym = ym + ya
+    # we conpute the response of the linear model for comparison with data
+    ymodel = compute_step_response(t, alpha, tau, L, delta_u, ya)
 
     if usefile:
         with plt.ioff():
@@ -785,14 +828,14 @@ def get_fomodel_step(system, yop=50, t1=360, usefile=False):
     ay.grid(True);
     ay.grid(color='#1a1a1a40', linestyle='--', linewidth=0.25)
     ay.set_facecolor('#f4eed7')
-    ay.set_xlim(0, tend)
+    ay.set_xlim(t[0], tend)
     box = dict(boxstyle='round,pad=0.5', facecolor='white', edgecolor='white', alpha=0.5)
-    ay.text(300, (ya+yb)/2, r'$\Delta_{y,e}=%0.2f$'%delta_y, fontsize=14, color='#ff0066',
+    ay.text(300, (ya+yb)/2, r'$\Delta_y=%0.2f$'%delta_y, fontsize=14, color='#ff0066',
              ha='center', va='bottom', bbox=box)
     ay.text( tau + 10, ya + 0.63212*delta_y,  r'$\tau = %0.2f$'%tau, fontsize=14, color='#ff0066')
 
     # settings for the lower, depicting the input
-    au.set_xlim(0, tend)
+    au.set_xlim(t[0], tend)
     au.grid(True);
     au.set_facecolor('#d7f4ee')
     au.grid(color='#1a1a1a40', linestyle='--', linewidth=0.25)
@@ -802,19 +845,19 @@ def get_fomodel_step(system, yop=50, t1=360, usefile=False):
     ay.set_ylabel('Temperature ($~^oC$)')
 
     line_exp, = ay.plot(t, y, color="#0088aa", linewidth=1.5, linestyle=(0, (1, 1)))
-    line_mod, = ay.plot(tm, ym, color="#ff0066", linewidth=1.5, )
+    line_mod, = ay.plot(t, ymodel, color="#ff0066", linewidth=1.5, )
     ay.plot(tau, ya + 0.63212*delta_y , color="#ff0066", linewidth=1.5, marker=".", markersize=13)
     line_u, = au.plot(t, u, color="#00aa00")
-    modelstr = r"Model $G(s)= \frac{\alpha_m}{\tau_m\,s + 1} = \frac{%0.3f }{%0.3f\,s+1}$" %(alpha, tau)
+    modelstr = r"Model $G(s)= \frac{\alpha}{\tau\,s + 1}\, e^{-L\,s}  = \frac{%0.2f }{%0.2f\,s+1}\, e^{-%0.2f\,s}$" %(alpha, tau, L)
     ay.legend([line_exp, line_mod], ['Data', modelstr], fontsize=12)
     au.legend([line_u], ['Input'])
     fig.canvas.draw()
-    exp = [[alpha, tau]]
-    np.savetxt(PATH_DATA + "Thermal_fomodel_step.csv", exp, delimiter=",", fmt="%0.8f", comments="", header='alpha, tau')
+    exp = [[alpha, tau, L]]
+    np.savetxt(PATH_DATA + "Thermal_fomodel_step.csv", exp, delimiter=",", fmt="%0.8f", comments="", header='alpha, tau, L')
     np.savetxt(PATH_DEFAULT + "Thermal_fomodel_step.csv", exp, delimiter=",", fmt="%0.8f", comments="",
-               header='alpha, tau')
+               header='alpha, tau, L')
     system.disconnect()
-    return G
+    return alpha, tau, L
 
 
 

@@ -485,7 +485,7 @@ void IRAM_ATTR onMqttReceived(char* lastTopic, byte* lastPayload, unsigned int l
 }
 
 void initMqtt() {
-    mqttClient.setServer(BROKER, 1883);
+    mqttClient.setServer(BROKER, PORT);
     mqttClient.setCallback(onMqttReceived);
     mqttClient.setBufferSize (4096);
 }
@@ -737,8 +737,7 @@ static void generalControlTask(void *pvParameters) {
             u = computeController( true);
         }
         usat = constrain(u, 0, 100);
-        wattsToPlant( usat);
-        //printf("elapsed =%d\n", xTaskGetTickCount() - inicio);
+        wattsToPlant( usat);            
         xTaskNotify(h_publishStateTask, 0b0001, eSetBits);
         sensors.requestTemperatures();
         xTaskDelayUntil(&xLastWakeTime, taskPeriod);
