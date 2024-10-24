@@ -398,17 +398,7 @@ def get_models_prbs(system, yop = 50, amplitude= 4, usefile = False):
     ym_interp = interp1d(t, ym)
     t_interp = np.arange(0, t[-1] + sampling_time, sampling_time)
 
-    """Now we obtain the initial parameters for the model
-                        alpha
-              G1(s) = -----------
-                      (tau1*s +1)
-     and 
-                      
-                         alpha
-              G2(s) = -----------  exp(-tau2 s)
-                      (tau1*s +1)                      
-                      
-    """
+    # we now obtain the model parameter's
     alpha_0 = 1.23
     tau1_0 = 60
     tau2_0 = 2
@@ -666,6 +656,9 @@ def step_open(system, yop=50, amplitude=5, t1=350, stab_time=60, uee_time=10):
 
 
 def read_fo_model():
+    """ Reads an fo model
+    :meta private:
+    """
     with open(PATH_DATA + 'Thermal_fo_model_pbrs.csv', newline='') as file:
         reader = csv.reader(file)
         # Iterate over each row in the CSV file
@@ -674,6 +667,7 @@ def read_fo_model():
             if num_line != 0:
                alpha = float(row[0])
                tau = float(row[1])
+               L = float(row[2])
             num_line += 1
     b = alpha / tau
     a = 1 / tau
@@ -681,25 +675,44 @@ def read_fo_model():
     return G
 
 
-def get_fomodel_step(system, yop=50, t1=360, amplitude =10, usefile=False):
-    """
-       Obtains the first order model plus delay (FOTD) from the experimental step response of a system.
+def get_fomodel_step(system, yop=50, t1=600, amplitude =10, usefile=False):
+    r"""
+       Obtains the first order model plus delay (FOTD) from the experimental step response of a thermal system. The FOTD
+       model is represented by the following equation
 
-       This function obtains (or reads) experimental step response data from a system, processes it, and extracts the
+       .. math::
+
+          G(s) = \frac{\alpha}{\tau s + 1} e^{-Ls}
+
+       where:
+
+       + :math:`\alpha` is the system gain,
+       + :math:`\tau` is the time constant, and
+       + :math:`L` is the delay.
+
+
+       This function obtains (or reads) the experimental step response data from a system, and computes the
        first order time delay (FOTD) model parameters: the system gain (`alpha`), time constant (`tau`), and
        delay (`L`). It can either use real-time data from the system or read from a previously saved file.
 
+        .. image:: _static/primer_orden.png
+           :alt: open loop response of the thermal system
+           :align: center
+           :width: 300px
+
+       This is some text after the image.
+
        Parameters
        ----------
-       system : ThermalSystemIoT object
-           The IoT system object that the experiment will be run on or from which data will be read.
-       yop : float, optional
-           The initial output parameter, default is 50 (degrees Celsius).
-       t1 : int, optional
+       `system` : ThermalSystemIoT object
+           The IoT thermal system in which the experiment will be performed.
+       `yop` : float, optional
+           The operation point at which you require to build the model.
+       `t1` : float, optional
            The duration of the experiment in seconds, default is 360.
-       amplitude : int, optional
+       `amplitude` : int, optional
            The amplitude of the step input change, default is 10.
-       usefile : bool, optional
+       `usefile` : bool, optional
            If True, data is read from a file instead of conducting a live experiment. Default is False.
 
        Returns
@@ -711,19 +724,23 @@ def get_fomodel_step(system, yop=50, t1=360, amplitude =10, usefile=False):
        L : float
            The delay of the system.
 
+
+       Example
+       -------
+
+
+       >>> import unthermal as ter
+       >>> my_system = ter.ThermalSystemIoT(plant_number = "XXXX" , broker_address = "192.168.0.25", port=1883)
+       >>> alpha, tau, L = ter.get_fomodel_step(my_system, yop=60, t1=600, amplitude=10)
+
        Notes
-       -----
-       The first-order time delay (FOTD) model of a system is typically represented by the following equation:
+       -------
 
-       .. math::
+       + The algorithm uses a four point method and bounded linear least squares for obtaining :math:`\alpha` and
+         :math:`\tau`.
+       + The thermal systems reaches `yop` in closed loop by  using a pretuned PID. This speeds up  the experiment.
+    """
 
-          G(s) = \frac{\alpha}{\tau s + 1} e^{-Ls}
-
-       where:
-       - :math:`\alpha` is the system gain,
-       - :math:`\tau` is the time constant, and
-       - :math:`L` is the delay.
-       """
 
     def compute_step_response(t, alpha, tau, L, delta_u, ya):
     # this function computes the atep responseof a FOTD system given the parameters, alpha, tau and L
