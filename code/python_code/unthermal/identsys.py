@@ -138,7 +138,55 @@ def step_closed_staticgain(system, r0=40, r1=40, t0=0, t1=60):
 
 
 
-def get_static_model(system, step = 5, usefile= False):
+def get_static_model (system, step = 5, usefile= False):    
+    """
+    Acquires static gain response data from a given thermal system and plots the response curve.
+    
+    This function utilizes a closed-loop control approach obtain the static model. The setpoint starts
+    at 40 degrees and is incremented sequentially in the value given by parameter step. 
+    For each setpoint, once the output (in this case, temperature) reaches the steady state reference value,
+    the control signal required to maintain that state is recorded. This provides a data point for the static model.
+    This process is repeated to cover the entire range of input values.
+
+    It configures a plot to display the static gain response experiment for the system, steps through a range
+    of input power percentages, measures the system's steady state temperature, and plots these data points.
+    It can optionally save the acquired data to a file.
+
+    Parameters
+    ----------
+
+    `system`: ThermalSystemIoT object
+        The thermal system under test.
+    `step`: float, optional
+        The increment from one setpoint to the next. Defaults to 5.
+    `usefile`: bool, optional
+        If True, reads the final plot data from a file instead of acquiring
+        new data. Defaults to False.
+
+    Returns
+    -------
+
+    `power_values`: list of floats
+                  containing the power percentage values
+    `temperatures`: list of floats
+                  containing the corresponding steady state temperatures.
+            
+    Notes
+    -----
+
+    - The function will retry acquiring data if any exceptions are encountered during data collection.
+    - Data is stored in a CSV file existing inside your execution path in `/experiment_files/Thermal_static_gain_model.csv`
+
+
+    Example
+    -------
+    
+    >>> thermal_system = UNThermalSystem()
+    >>> power_values, temperatures = get_static_model(thermal_system, step=5)
+    
+    """
+
+
 
     # This is the configuration for the figure displayed while acquiring data
     with plt.ioff():
