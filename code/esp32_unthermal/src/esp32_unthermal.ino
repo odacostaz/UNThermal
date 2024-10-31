@@ -230,7 +230,7 @@ void wattsToPlant(float watts){
 void connectMqtt()
 {
     printf("Starting MQTT connection...");
-    if (mqttClient.connect(THINGNAME, USER, PASSWORD))
+    if (mqttClient.connect(THINGNAME))
     {
         mqttClient.subscribe(USER_SYS_STAIRS_CLOSED);
         mqttClient.subscribe(USER_SYS_SET_PID);
