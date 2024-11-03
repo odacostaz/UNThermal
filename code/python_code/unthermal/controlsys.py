@@ -150,7 +150,7 @@ def step_closed(system, r0=0 , r1=100, t0=0 ,  t1=1):
     ay.set_xlim(0, t0 + t1  - sampling_time)
 
     #Setting the limits of figure
-    py = 0.5
+    py = 0.7
     delta_r = abs(r1 - r0)
     ylimits = [r0 , r1]
     ylimits = [np.min(ylimits)- py * delta_r , np.max(ylimits) + py * delta_r]
