@@ -848,7 +848,7 @@ def get_fomodel_step(system, yop=50, t1=600, amplitude =10, usefile=False):
     y_norm = (y - ya) / delta_y
 
     # we set the selected points in the normalized curve
-    yi_points = [0.05, 0.1, 0.2, 0.3]
+    yi_points = [0.05, 0.1, 0.15, 0.2]
     ti_points = np.interp(yi_points, y_norm, t) 
 
 
