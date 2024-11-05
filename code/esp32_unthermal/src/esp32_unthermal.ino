@@ -68,7 +68,7 @@ uint32_t points_stairs;
 uint32_t duration;
 uint32_t points_high = 50;
 uint32_t points_low = 50;
-uint32_t np = 0;
+uint32_t np = 1000000;
 uint32_t total_time = 4294967295;
 
 
@@ -555,17 +555,20 @@ void  computeReference() {
             break;
 
         case USER_SYS_STEP_CLOSED_INT:
+            
             if (np < points_low) {
-                reference = low_val;
-                displayLed(y, 20, 90, 0.3, 0);
-                displayLed(reference, 20, 90, 0.3, 1);
+                float delta = high_val - low_val;
+                reference = low_val;                
+                displayLed(y, low_val - delta, high_val + delta, 0.3, 0);
+                displayLed(reference, low_val - delta, high_val + delta, 0.3, 1);
                 displayLed(usat, 0, 100, 0.1, 2);
 
             }
             else if (np <= total_time) {
+                float delta = high_val - low_val;
                 reference = high_val;
-                displayLed(y, 20, 90, 0.3, 0);
-                displayLed(reference, 20, 90, 0.3, 1);
+                displayLed(y, low_val - delta, high_val + delta, 0.3, 0);
+                displayLed(reference, low_val - delta, high_val + delta, 0.3, 1);
                 displayLed(usat, 0, 100, 0.1, 2);
             }
             else if (np <= total_time + 1){
@@ -695,6 +698,7 @@ static void controlPidTask(void *pvParameters) {
         wattsToPlant(usat); // Enviar señal de control en bits
         IA = IA + bi *(reference - y) + br*(usat - u);  // calculo de la accion integral
         y_ant = y;
+        
         xTaskNotify(h_publishStateTask, 0b0001, eSetBits);
         sensors.requestTemperatures();
         xTaskDelayUntil(&xLastWakeTime, taskPeriod);
@@ -737,7 +741,8 @@ static void generalControlTask(void *pvParameters) {
             u = computeController( true);
         }
         usat = constrain(u, 0, 100);
-        wattsToPlant( usat);            
+        wattsToPlant( usat);   
+       
         xTaskNotify(h_publishStateTask, 0b0001, eSetBits);
         sensors.requestTemperatures();
         xTaskDelayUntil(&xLastWakeTime, taskPeriod);

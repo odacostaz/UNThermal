@@ -76,7 +76,7 @@ def set_reference(system, ref_value=50):
     return rcode
 
 
-def set_pid(system, kp=1, ki=0.4, kd=0, N=5, beta=1):
+def set_pid(system, kp=1, ki=0.4, kd=0, N=5, beta=0):
     topic_pub = system.codes["USER_SYS_SET_PID"]
     kp_hex = float2hex(kp)
     ki_hex = float2hex(ki)
@@ -186,16 +186,15 @@ def step_closed(system, r0=0 , r1=100, t0=0 ,  t1=1):
         msg_dict = json.loads(decoded_message)
         n_hex = str(msg_dict["np"])
         n = hex2long(n_hex)
+        r_curr = hex2float(msg_dict["r"])
         if n == 0:
-            sync = True
+            sync = True           
 
-
-        if sync == True:
+        if (sync == True) & ((r_curr == r0)|(r_curr == r1)):            
             t_curr = n * sampling_time
             t.append(t_curr)
             y_curr = hex2float(msg_dict["y"])
             y.append(y_curr)
-            r_curr = hex2float(msg_dict["r"])
             r.append(r_curr)
             u_curr = hex2float(msg_dict["u"])
             u.append(u_curr)
