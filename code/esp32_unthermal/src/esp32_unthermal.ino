@@ -68,7 +68,7 @@ uint32_t points_stairs;
 uint32_t duration;
 uint32_t points_high = 50;
 uint32_t points_low = 50;
-uint32_t np = 1000000;
+uint32_t np = 0;
 uint32_t total_time = 4294967295;
 
 
@@ -223,14 +223,10 @@ void wattsToPlant(float watts){
 
 
 
-
-
-
-
 void connectMqtt()
 {
     printf("Starting MQTT connection...");
-    if (mqttClient.connect(THINGNAME))
+    if (mqttClient.connect(THINGNAME, USER, PASSWORD))
     {
         mqttClient.subscribe(USER_SYS_STAIRS_CLOSED);
         mqttClient.subscribe(USER_SYS_SET_PID);
@@ -240,7 +236,7 @@ void connectMqtt()
         mqttClient.subscribe(USER_SYS_PRBS_OPEN);
         mqttClient.subscribe(USER_SYS_SET_GENCON);
         mqttClient.subscribe(USER_SYS_PROFILE_CLOSED);
-        printf("connected to broker\n");
+        printf("now connected to broker %s !\n", BROKER);
     }
     else
     {
@@ -555,20 +551,17 @@ void  computeReference() {
             break;
 
         case USER_SYS_STEP_CLOSED_INT:
-            
             if (np < points_low) {
-                float delta = high_val - low_val;
-                reference = low_val;                
-                displayLed(y, low_val - delta, high_val + delta, 0.3, 0);
-                displayLed(reference, low_val - delta, high_val + delta, 0.3, 1);
+                reference = low_val;
+                displayLed(y, 20, 90, 0.3, 0);
+                displayLed(reference, 20, 90, 0.3, 1);
                 displayLed(usat, 0, 100, 0.1, 2);
 
             }
             else if (np <= total_time) {
-                float delta = high_val - low_val;
                 reference = high_val;
-                displayLed(y, low_val - delta, high_val + delta, 0.3, 0);
-                displayLed(reference, low_val - delta, high_val + delta, 0.3, 1);
+                displayLed(y, 20, 90, 0.3, 0);
+                displayLed(reference, 20, 90, 0.3, 1);
                 displayLed(usat, 0, 100, 0.1, 2);
             }
             else if (np <= total_time + 1){
@@ -696,9 +689,12 @@ static void controlPidTask(void *pvParameters) {
         u = PA + IA + DA;// + uN ; // control signal
         usat =  constrain(u, 0, 100); //señal de control saturada
         wattsToPlant(usat); // Enviar señal de control en bits
-        IA = IA + bi *(reference - y) + br*(usat - u);  // calculo de la accion integral
+             
+        if (ki!= 0) {
+           IA = IA + bi *(reference - y) + br*(usat - u);  // updating integral action
+        }
+       
         y_ant = y;
-        
         xTaskNotify(h_publishStateTask, 0b0001, eSetBits);
         sensors.requestTemperatures();
         xTaskDelayUntil(&xLastWakeTime, taskPeriod);
@@ -741,8 +737,7 @@ static void generalControlTask(void *pvParameters) {
             u = computeController( true);
         }
         usat = constrain(u, 0, 100);
-        wattsToPlant( usat);   
-       
+        wattsToPlant( usat);            
         xTaskNotify(h_publishStateTask, 0b0001, eSetBits);
         sensors.requestTemperatures();
         xTaskDelayUntil(&xLastWakeTime, taskPeriod);
