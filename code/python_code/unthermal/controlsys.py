@@ -150,7 +150,7 @@ def step_closed(system, r0=0 , r1=100, t0=0 ,  t1=1):
     ay.set_xlim(0, t0 + t1  - sampling_time)
 
     #Setting the limits of figure
-    py = 0.7
+    py = 0.6
     delta_r = abs(r1 - r0)
     ylimits = [r0 , r1]
     ylimits = [np.min(ylimits)- py * delta_r , np.max(ylimits) + py * delta_r]
@@ -206,6 +206,9 @@ def step_closed(system, r0=0 , r1=100, t0=0 ,  t1=1):
             line_u.set_data(t, u)
             fig.canvas.draw()
             time.sleep(0.1)
+    
+    ay.set_ylim([r0 - 0.05*delta_r, np.max(y) + 0.05*delta_r])
+    plt.ioff()
     Path(PATH_DATA).mkdir(exist_ok=True)
     np.savetxt(PATH_DEFAULT + "Thermal_step_closed_exp.csv",  exp, delimiter=",", fmt="%0.8f", comments="", header='t,r,y,u')
     np.savetxt(PATH_DATA + "Thermal_step_closed_exp.csv",  exp, delimiter=",", fmt="%0.8f", comments="", header='t,r,y,u')
