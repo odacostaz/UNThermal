@@ -95,7 +95,68 @@ def set_pid(system, kp=1, ki=0.4, kd=0, N=5, beta=0):
     return
 
 
-def step_closed(system, r0=0 , r1=100, t0=0 ,  t1=1):
+def step_closed(system, r0=40 , r1=50, t0=60 ,  t1=60):
+    """
+    Executes a closed-loop step response experiment on the thermal control system.
+
+    This function performs a closed-loop experiment to evaluate the system's step response.
+    The setpoint begins at an initial value `r0` and steps up to a final value `r1`. 
+    The duration for each setpoint level is defined by `t0` and `t1`, respectively.
+    Throughout the experiment, the output temperature, control input, and time are plotted  and recorded.
+
+    
+    .. image:: _static/step_closed.png
+        :alt: open loop response of the thermal system
+        :align: center
+        :width: 500px
+    
+    The figure above depicts the parameters described below 
+        
+    Parameters
+    ----------
+    system : ThermalSystemIoT
+        The IoT thermal system on which the experiment will be conducted.
+    r0 : float, optional
+        Initial setpoint (temperature in degrees Celsius). Default is 40.
+    r1 : float, optional
+        Final setpoint (temperature in degrees Celsius) after the step change. Default is 50.
+    t0 : float, optional
+        Time in seconds to maintain the initial setpoint `r0` before stepping to `r1`. Default is 60.
+    t1 : float, optional
+        Time in seconds to maintain the final setpoint `r1` after the step change. Default is 60.
+
+    Returns
+    -------
+    t : list of floats
+        A list of time points (in seconds) recorded during the experiment.
+    r : list of floats
+        A list of reference setpoints (in degrees Celsius) applied during the experiment.
+    y : list of floats
+        A list of output temperatures (in degrees Celsius) recorded during the experiment.
+    u : list of floats
+        The control input values (as a percentage of 2.475 W) applied to control the system.
+
+    Notes
+    -----
+    - A plot is configured to visualize the step response in real-time, displaying the temperature (output) 
+      and control input over time.
+    - Data from the experiment is saved as a CSV file at `/experiment_files/Thermal_step_closed_exp.csv`
+
+    Example
+    -------
+    >>> import unthermal as ter
+    >>> my_system = ter.ThermalSystemIoT(plant_number="XXXX", broker_address="192.168.1.100")
+    >>> t, r, y, u = ter.step_closed(my_system, r0=50, r1=60, t0=60, t1=60)
+
+    Raises
+    ------
+    TimeoutError
+        If the connection to the system is lost during the experiment.
+
+    """
+
+
+
     def step_message(system, userdata, message):
         q.put(message)
 

@@ -140,51 +140,47 @@ def step_closed_staticgain(system, r0=40, r1=40, t0=0, t1=60):
 
 def get_static_model (system, step = 5, usefile= False):    
     """
-    Acquires static gain response data from a given thermal system and plots the response curve.
-    
-    This function utilizes a closed-loop control approach obtain the static model. The setpoint starts
-    at 40 degrees and is incremented sequentially in the value given by parameter step. 
-    For each setpoint, once the output (in this case, temperature) reaches the steady state reference value,
-    the control signal required to maintain that state is recorded. This provides a data point for the static model.
-    This process is repeated to cover the entire range of input values.
+    Sets up and conducts a sequence of experiments to obtain the static gain model for a temperature control system.
 
-    It configures a plot to display the static gain response experiment for the system, steps through a range
-    of input power percentages, measures the system's steady state temperature, and plots these data points.
-    It can optionally save the acquired data to a file.
+    This function uses a closed-loop control approach to determine the static model. The setpoint begins
+    at 40 degrees Celsius and increments by the value specified in the `step` parameter. For each setpoint,
+    once the system output (temperature) reaches the steady-state value, the control signal required to
+    maintain that state is recorded, generating a data point for the static model. This process covers the
+    range from 40° to 60° Celsius.
+
+    
+    .. image:: _static/get_static_model.png
+        :alt: open loop response of the thermal system
+        :align: center
+        :width: 500px
 
     Parameters
     ----------
-
-    `system`: ThermalSystemIoT object
+    system : ThermalSystemIoT
         The thermal system under test.
-    `step`: float, optional
-        The increment from one setpoint to the next. Defaults to 5.
-    `usefile`: bool, optional
-        If True, reads the final plot data from a file instead of acquiring
-        new data. Defaults to False.
+    step : float, optional
+        The increment between setpoints. Defaults to 5.
+    usefile : bool, optional
+        If True, reads data from a prerecorded file instead of conducting a new experiment. Defaults to False.
 
     Returns
     -------
+    power_values : list of floats
+        A vector of the power input values required to achieve each steady-state temperature.
+    temperatures : list of floats
+        A vector containing the steady-state temperatures.
 
-    `power_values`: list of floats
-                  containing the power percentage values
-    `temperatures`: list of floats
-                  containing the corresponding steady state temperatures.
-            
     Notes
     -----
-
-    - The function will retry acquiring data if any exceptions are encountered during data collection.
-    - Data is stored in a CSV file existing inside your execution path in `/experiment_files/Thermal_static_gain_model.csv`
-
+    - Data is stored in a CSV file located at `/experiment_files/Thermal_static_gain_model.csv`.
 
     Example
     -------
-    
-    >>> thermal_system = UNThermalSystem()
-    >>> power_values, temperatures = get_static_model(thermal_system, step=5)
-    
+    >>> import unthermal as ter
+    >>> my_system = ter.ThermalSystemIoT(plant_number="XXXX", broker_address="192.168.1.100")
+    >>> alpha, tau, L = ter.get_static_model(my_system, step=5)
     """
+
 
 
 
@@ -558,7 +554,59 @@ def get_models_prbs(system, yop = 50, amplitude= 4, usefile = False):
 
     return G1, G2, tau2
 
-def step_open(system, yop=50, amplitude=5, t1=350, stab_time=60, uee_time=10):
+def step_open(system, yop=50, amplitude=10, t1=360, stab_time=60, uee_time=10):
+    """  
+    This function sets up and performs an experiment to observe how the system's temperature responds to a specified step
+    change in the power input. The experiment first adjust the operating point by means of a
+    pretuned PI controller.
+
+    .. image:: _static/step_open.png
+        :alt: open loop response of the thermal system
+        :align: center
+        :width: 500px
+
+    The figure illustrates parameters `yop`, `t1` and `ampitude` described below.
+
+
+    Parameters
+    ----------
+    `system` : ThermalSystemIoT object
+        The IoT thermal system in which the experiment will be performed.
+    `yop` : float, optional
+        The operation point temperature at which you want to conduct the experiment. Default is 50°
+    `t1` : float, optional
+        The duration of the experiment in seconds since the step changes. Default is 360.
+    `amplitude` : float, optional
+        The amplitude of the change in the step input measured from uop, which is the power control signal needed to produce
+        a steady state temperature of`yop`. Default is 10.
+    `stab_time` : float, optional
+        The time that the controlled system requires for reaching `yop`, in seconds. Default is 60.
+    `uee_time` : float, optional
+        During this period, the input signal is held constant before the step change is applied. The default value is 10.
+
+    Raises
+    ------
+    ValueError: If `yop` is set above 100 degrees Celsius, considering it the safety limit for student's operation.
+
+    Returns
+    -------
+    t :  list
+        The time vector.
+    u :  list
+        The power input vector.
+    y : float
+        The temperature output vector.
+
+
+    Example
+    -------
+
+
+    >>> import unthermal as ter
+    >>> my_system = ter.ThermalSystemIoT(plant_number = "XXXX" , broker_address = "192.168.1.100")
+    >>> t, u, y = ter.step_open(my_system, yop=60, t1=600, amplitude=10)
+    """
+    
     def step_message(system, userdata, message):
         q.put(message)
 
@@ -725,8 +773,8 @@ def read_fo_model():
 
 def get_fomodel_step(system, yop=50, t1=600, amplitude =10, usefile=False):
     r"""
-       Obtains the first order model plus delay (FOTD) from the experimental step response of a thermal system. The FOTD
-       model is represented by the following equation
+       Obtains the first order model plus delay (FOTD) from the experimental step response of a thermal system. 
+       The FOTD model is represented by the following equation
 
        .. math::
 
@@ -739,27 +787,28 @@ def get_fomodel_step(system, yop=50, t1=600, amplitude =10, usefile=False):
        + :math:`L` is the delay.
 
 
-       This function obtains (or reads) the experimental step response data from a system, and computes the
+       This function obtains the experimental step response data from a system, and computes the
        first order time delay (FOTD) model parameters: the system gain (`alpha`), time constant (`tau`), and
        delay (`L`). It can either use real-time data from the system or read from a previously saved file.
 
-        .. image:: _static/primer_orden.png
+        .. image:: _static/get_fomodel_step.png
            :alt: open loop response of the thermal system
            :align: center
-           :width: 300px
+           :width: 500px
 
-       This is some text after the image.
+       The figure illustrates parameters `yop`, `t1` and `ampitude` described below.
 
        Parameters
        ----------
        `system` : ThermalSystemIoT object
            The IoT thermal system in which the experiment will be performed.
        `yop` : float, optional
-           The operation point at which you require to build the model.
+           The operation point temperature at which you require to build the model. Default is 50°
        `t1` : float, optional
-           The duration of the experiment in seconds, default is 360.
-       `amplitude` : int, optional
-           The amplitude of the step input change, default is 10.
+           The duration of the experiment in seconds since the step changes. Default is 600.
+       `amplitude` : float, optional
+           The amplitude of the change in the step input measured from uop, which is the control signal needed to produce
+           a steady state temperature of`yop`. Default is 10.
        `usefile` : bool, optional
            If True, data is read from a file instead of conducting a live experiment. Default is False.
 
@@ -778,7 +827,7 @@ def get_fomodel_step(system, yop=50, t1=600, amplitude =10, usefile=False):
 
 
        >>> import unthermal as ter
-       >>> my_system = ter.ThermalSystemIoT(plant_number = "XXXX" , broker_address = "192.168.0.25", port=1883)
+       >>> my_system = ter.ThermalSystemIoT(plant_number = "XXXX" , broker_address = "192.168.1.100")
        >>> alpha, tau, L = ter.get_fomodel_step(my_system, yop=60, t1=600, amplitude=10)
 
        Notes
@@ -786,7 +835,7 @@ def get_fomodel_step(system, yop=50, t1=600, amplitude =10, usefile=False):
 
        + The algorithm uses a four point method and bounded linear least squares for obtaining :math:`\alpha` and
          :math:`\tau`.
-       + The thermal systems reaches `yop` in closed loop by  using a pretuned PID. This speeds up  the experiment.
+       + The thermal systems reaches `yop` in closed loop, using a pretuned PID. This speeds up the experiment.
     """
 
 
