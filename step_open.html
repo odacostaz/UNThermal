@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>&lt;no title&gt; &mdash; unthermal 0.1 documentation</title>
+  <title>&lt;no title&gt; &mdash; Pocket Laboratories 0.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
 
@@ -19,7 +19,8 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="prev" title="&lt;no title&gt;" href="step_closed.html" /> 
+    <link rel="next" title="&lt;no title&gt;" href="get_fomodel_step.html" />
+    <link rel="prev" title="User methods:" href="thermal_system_iot.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -31,7 +32,7 @@
           
           
           <a href="index.html" class="icon icon-home">
-            unthermal
+            Pocket Laboratories
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -41,12 +42,17 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption" role="heading"><span class="caption-text">Functions:</span></p>
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="get_fomodel_step.html"><code class="docutils literal notranslate"><span class="pre">get_fomodel_step()</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="get_static_model.html"><code class="docutils literal notranslate"><span class="pre">get_static_model()</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="step_closed.html"><code class="docutils literal notranslate"><span class="pre">step_closed()</span></code></a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#"><code class="docutils literal notranslate"><span class="pre">step_open()</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="unthermal.html">Define a thermal system</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="unthermal.html#open-loop-experiments">Open Loop Experiments</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#"><code class="docutils literal notranslate"><span class="pre">step_open()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="get_fomodel_step.html"><code class="docutils literal notranslate"><span class="pre">get_fomodel_step()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="get_static_model.html"><code class="docutils literal notranslate"><span class="pre">get_static_model()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="unthermal.html#closed-loop-experiments">Closed Loop Experiments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="unthermal.html#programming-controllers">Programming Controllers</a></li>
 </ul>
 
         </div>
@@ -55,7 +61,7 @@
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="index.html">unthermal</a>
+          <a href="index.html">Pocket Laboratories</a>
       </nav>
 
       <div class="wy-nav-content">
@@ -63,6 +69,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="unthermal.html">Define a thermal system</a></li>
       <li class="breadcrumb-item active">&lt;no title&gt;</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/step_open.rst.txt" rel="nofollow"> View page source</a>
@@ -81,7 +88,7 @@ change in the power input. The experiment first adjust the operating point by me
 pretuned PI controller.</p>
 <a class="reference internal image-reference" href="_images/step_open.png"><img alt="open loop response of the thermal system" class="align-center" src="_images/step_open.png" style="width: 500px;" />
 </a>
-<p>The figure illustrates parameters <cite>yop</cite>, <cite>t1</cite> and <cite>ampitude</cite> described below.</p>
+<p>The figure illustrates parameters <cite>yop</cite>, <cite>t1</cite> and <cite>amplitude</cite>, which are described below.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -90,8 +97,8 @@ pretuned PI controller.</p>
 <li><p><strong>t1</strong> (<em>float</em><em>, </em><em>optional</em>) – The duration of the experiment in seconds since the step changes. Default is 360.</p></li>
 <li><p><strong>amplitude</strong> (<em>float</em><em>, </em><em>optional</em>) – The amplitude of the change in the step input measured from uop, which is the power control signal needed to produce
 a steady state temperature of`yop`. Default is 10.</p></li>
-<li><p><strong>stab_time</strong> (<em>float</em><em>, </em><em>optional</em>) – The time that the controlled system requires for reaching <cite>yop</cite>, in seconds. Default is 60.</p></li>
-<li><p><strong>uee_time</strong> (<em>float</em><em>, </em><em>optional</em>) – During this period, the input signal is held constant before the step change is applied. The default value is 10.</p></li>
+<li><p><strong>stab_time</strong> (<em>float</em><em>, </em><em>optional</em>) – The time, in seconds. that the controlled system requires for reaching <cite>yop</cite>, in seconds. Default is 60.</p></li>
+<li><p><strong>uee_time</strong> (<em>float</em><em>, </em><em>optional</em>) – During this period, in seconds, the input signal is held constant before the step change is applied. The default value is 10.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
@@ -99,17 +106,21 @@ a steady state temperature of`yop`. Default is 10.</p></li>
 </dd>
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p><ul class="simple">
-<li><p><strong>t</strong> (<em>list</em>) – The time vector.</p></li>
-<li><p><strong>u</strong> (<em>list</em>) – The power input vector.</p></li>
-<li><p><strong>y</strong> (<em>float</em>) – The temperature output vector.</p></li>
+<li><p><strong>t</strong> (<em>list of floats</em>) – The time vector.</p></li>
+<li><p><strong>u</strong> (<em>list of floats</em>) – The power input vector.</p></li>
+<li><p><strong>y</strong> (<em>list of floats</em>) – The temperature output vector.</p></li>
 </ul>
 </p>
 </dd>
 </dl>
 <p class="rubric">Example</p>
+<p>First, ensure that you have already imported the unthermal package and defined the thermal system as follows:</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">unthermal</span> <span class="k">as</span> <span class="nn">ter</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">my_system</span> <span class="o">=</span> <span class="n">ter</span><span class="o">.</span><span class="n">ThermalSystemIoT</span><span class="p">(</span><span class="n">plant_number</span> <span class="o">=</span> <span class="s2">&quot;XXXX&quot;</span> <span class="p">,</span> <span class="n">broker_address</span> <span class="o">=</span> <span class="s2">&quot;192.168.1.100&quot;</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">t</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">ter</span><span class="o">.</span><span class="n">step_open</span><span class="p">(</span><span class="n">my_system</span><span class="p">,</span> <span class="n">yop</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span> <span class="n">t1</span><span class="o">=</span><span class="mi">600</span><span class="p">,</span> <span class="n">amplitude</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">my_system</span> <span class="o">=</span> <span class="n">ter</span><span class="o">.</span><span class="n">ThermalSystemIoT</span><span class="p">(</span><span class="n">plant_number</span><span class="o">=</span><span class="s2">&quot;XXXX&quot;</span><span class="p">,</span> <span class="n">broker_address</span><span class="o">=</span><span class="s2">&quot;192.168.1.100&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Then, the open loop step response of the thermal system is obtained as follows:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">t</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">ter</span><span class="o">.</span><span class="n">step_open</span><span class="p">(</span><span class="n">my_system</span><span class="p">,</span> <span class="n">yop</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span> <span class="n">t1</span><span class="o">=</span><span class="mi">600</span><span class="p">,</span> <span class="n">amplitude</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
 </pre></div>
 </div>
 </dd></dl>
@@ -119,7 +130,8 @@ a steady state temperature of`yop`. Default is 10.</p></li>
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="step_closed.html" class="btn btn-neutral float-left" title="&lt;no title&gt;" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="thermal_system_iot.html" class="btn btn-neutral float-left" title="User methods:" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="get_fomodel_step.html" class="btn btn-neutral float-right" title="&lt;no title&gt;" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

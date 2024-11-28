@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>&lt;no title&gt; &mdash; unthermal 0.1 documentation</title>
+  <title>&lt;no title&gt; &mdash; Pocket Laboratories 0.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
 
@@ -32,7 +32,7 @@
           
           
           <a href="index.html" class="icon icon-home">
-            unthermal
+            Pocket Laboratories
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -42,12 +42,17 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption" role="heading"><span class="caption-text">Functions:</span></p>
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="get_fomodel_step.html"><code class="docutils literal notranslate"><span class="pre">get_fomodel_step()</span></code></a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#"><code class="docutils literal notranslate"><span class="pre">get_static_model()</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="step_closed.html"><code class="docutils literal notranslate"><span class="pre">step_closed()</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="step_open.html"><code class="docutils literal notranslate"><span class="pre">step_open()</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="unthermal.html">Define a thermal system</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="unthermal.html#open-loop-experiments">Open Loop Experiments</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="step_open.html"><code class="docutils literal notranslate"><span class="pre">step_open()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="get_fomodel_step.html"><code class="docutils literal notranslate"><span class="pre">get_fomodel_step()</span></code></a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#"><code class="docutils literal notranslate"><span class="pre">get_static_model()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="unthermal.html#closed-loop-experiments">Closed Loop Experiments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="unthermal.html#programming-controllers">Programming Controllers</a></li>
 </ul>
 
         </div>
@@ -56,7 +61,7 @@
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="index.html">unthermal</a>
+          <a href="index.html">Pocket Laboratories</a>
       </nav>
 
       <div class="wy-nav-content">
@@ -64,6 +69,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="unthermal.html">Define a thermal system</a></li>
       <li class="breadcrumb-item active">&lt;no title&gt;</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/get_static_model.rst.txt" rel="nofollow"> View page source</a>
@@ -96,8 +102,8 @@ range from 40° to 60° Celsius.</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><ul class="simple">
-<li><p><strong>power_values</strong> (<em>list of floats</em>) – A vector of the power input values required to achieve each steady-state temperature.</p></li>
-<li><p><strong>temperatures</strong> (<em>list of floats</em>) – A vector containing the steady-state temperatures.</p></li>
+<li><p><strong>power_values</strong> (<em>list of floats</em>) – A list of the power input values required to achieve each steady-state temperature.</p></li>
+<li><p><strong>temperatures</strong> (<em>list of floats</em>) – A list containing the steady-state temperatures.</p></li>
 </ul>
 </p>
 </dd>
@@ -107,9 +113,13 @@ range from 40° to 60° Celsius.</p>
 <li><p>Data is stored in a CSV file located at <cite>/experiment_files/Thermal_static_gain_model.csv</cite>.</p></li>
 </ul>
 <p class="rubric">Example</p>
+<p>First, ensure that you have already imported the unthermal package and defined the thermal system as follows:</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">unthermal</span> <span class="k">as</span> <span class="nn">ter</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">my_system</span> <span class="o">=</span> <span class="n">ter</span><span class="o">.</span><span class="n">ThermalSystemIoT</span><span class="p">(</span><span class="n">plant_number</span><span class="o">=</span><span class="s2">&quot;XXXX&quot;</span><span class="p">,</span> <span class="n">broker_address</span><span class="o">=</span><span class="s2">&quot;192.168.1.100&quot;</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">alpha</span><span class="p">,</span> <span class="n">tau</span><span class="p">,</span> <span class="n">L</span> <span class="o">=</span> <span class="n">ter</span><span class="o">.</span><span class="n">get_static_model</span><span class="p">(</span><span class="n">my_system</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Then, obtain the static model of the thermal system as follows:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">power</span><span class="p">,</span> <span class="n">temperature</span> <span class="o">=</span> <span class="n">ter</span><span class="o">.</span><span class="n">get_static_model</span><span class="p">(</span><span class="n">my_system</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
 </pre></div>
 </div>
 </dd></dl>

@@ -1,0 +1,182 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>&lt;no title&gt; &mdash; Pocket Laboratories 0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=2709fde1"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="&lt;no title&gt;" href="set_pid.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Pocket Laboratories
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="unthermal.html">Define a thermal system</a></li>
+<li class="toctree-l1"><a class="reference internal" href="unthermal.html#open-loop-experiments">Open Loop Experiments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="unthermal.html#closed-loop-experiments">Closed Loop Experiments</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="unthermal.html#programming-controllers">Programming Controllers</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="set_pid.html"><code class="docutils literal notranslate"><span class="pre">set_pid()</span></code></a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#"><code class="docutils literal notranslate"><span class="pre">set_controller()</span></code></a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Pocket Laboratories</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="unthermal.html">Define a thermal system</a></li>
+      <li class="breadcrumb-item active">&lt;no title&gt;</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/set_controller.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <dl class="py function">
+<dt class="sig sig-object py" id="unthermal.controlsys.set_controller">
+<span class="sig-name descname"><span class="pre">set_controller</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">system</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">controller</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#unthermal.controlsys.set_controller" title="Link to this definition"></a></dt>
+<dd><p>Programs a controller for the thermal system.</p>
+<p>The controller is defined as a transfer function in the Laplace Transform Domain <span class="math notranslate nohighlight">\(s\)</span>.</p>
+<p>This function allows the user to program a standard 1-DOF controller, as shown in the next figure:</p>
+<a class="reference internal image-reference" href="_images/controller_1gdl.png"><img alt="Closed-loop response of the thermal system" class="align-center" src="_images/controller_1gdl.png" style="width: 400px;" />
+</a>
+<p>A 2-DOF controller, as shown below, can also be programmed using this function.</p>
+<a class="reference internal image-reference" href="_images/controller_2gdl.png"><img alt="Closed-loop response of the thermal system" class="align-center" src="_images/controller_2gdl.png" style="width: 400px;" />
+</a>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>system</strong> (<em>ThermalSystemIoT</em>) – The IoT thermal system to which the controller will be programmed.</p></li>
+<li><p><strong>controller</strong> (<em>TransferFunction</em>) – A continuous-time transfer function object (<cite>ct.tf</cite>) in the Laplace Transform Domain <span class="math notranslate nohighlight">\(s\)</span>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Returns <cite>True</cite> if the controller parameters are successfully updated.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<ul class="simple">
+<li><p>This function supports both 1-DOF and 2-DOF controllers.</p></li>
+<li><p>The controller is converted to state-space form for digital implementation. It is discretized using the bilinear transform with a sampling time of 0.8 seconds, which is suitable for this system.</p></li>
+<li><p>An observer-based anti-windup scheme is implemented using the LQR method.</p></li>
+</ul>
+<p class="rubric">Examples</p>
+<p><strong>Example 1: Programming a 1-DOF Controller</strong></p>
+<p>First, import the required packages <cite>unthermal</cite> and <cite>control</cite>.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">control</span> <span class="k">as</span> <span class="nn">ct</span>  <span class="c1"># Importing control systems package</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">unthermal</span> <span class="k">as</span> <span class="nn">ter</span>  <span class="c1"># Importing thermal system package</span>
+</pre></div>
+</div>
+<p>Define the Laplace variable <cite>s</cite> and the thermal system:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">s</span> <span class="o">=</span> <span class="n">ct</span><span class="o">.</span><span class="n">TransferFunction</span><span class="o">.</span><span class="n">s</span>  <span class="c1"># Defining Laplace variable</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">my_system</span> <span class="o">=</span> <span class="n">ter</span><span class="o">.</span><span class="n">ThermalSystemIoT</span><span class="p">(</span><span class="n">plant_number</span><span class="o">=</span><span class="s2">&quot;XXXX&quot;</span><span class="p">,</span> <span class="n">broker_address</span><span class="o">=</span><span class="s2">&quot;192.168.1.100&quot;</span><span class="p">)</span> <span class="c1"># defining the thermal system</span>
+</pre></div>
+</div>
+<p>Now, suppose we want to program the following controller:</p>
+<p><span class="math notranslate nohighlight">\(C(s) = \dfrac{2s^2 + s + 1}{s(s+2)}\)</span></p>
+<p>We define and upload the controller as follows:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">C</span> <span class="o">=</span> <span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">s</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">s</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">s</span> <span class="o">*</span> <span class="p">(</span><span class="n">s</span> <span class="o">+</span> <span class="mi">2</span><span class="p">))</span>  <span class="c1"># Defining the controller as a transfer function object</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ter</span><span class="o">.</span><span class="n">set_controller</span><span class="p">(</span><span class="n">my_system</span><span class="p">,</span> <span class="n">C</span><span class="p">)</span> <span class="c1"># uploading controller</span>
+</pre></div>
+</div>
+<p>Alternatively, we can upload the controller using the numerator and denominator coefficients:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">num</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="c1"># defining numerator as a list</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">den</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="c1"># defining  denominator as a list</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">C</span> <span class="o">=</span> <span class="n">ct</span><span class="o">.</span><span class="n">tf</span><span class="p">(</span><span class="n">num</span><span class="p">,</span> <span class="n">den</span><span class="p">)</span> <span class="c1">#  # Defining the controller as a transfer function object</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ter</span><span class="o">.</span><span class="n">set_controller</span><span class="p">(</span><span class="n">my_system</span><span class="p">,</span> <span class="n">C</span><span class="p">)</span> <span class="c1"># uploading controller</span>
+</pre></div>
+</div>
+<p><strong>Example 2: Programming a 2-DOF Controller</strong></p>
+<p>Suppose we want to program the following 2-DOF controller:</p>
+<p><span class="math notranslate nohighlight">\(C(s) = \left[\dfrac{L}{A} \,\,\, \dfrac{M}{A}\right] = \left[\dfrac{2s + 1}{s^2 + 2s + 1} \,\,\, \dfrac{-6s - 5}{s^2 + 2s + 1}\right]\)</span></p>
+<p>We define and program the controller as follows:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">num</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="o">-</span><span class="mi">6</span><span class="p">,</span> <span class="o">-</span><span class="mi">5</span><span class="p">]]</span>  <span class="c1"># Numerator lists for L and M</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">den</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">]]</span>  <span class="c1"># List of denominators, where A is repeated for each transfer function entry</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">C</span> <span class="o">=</span> <span class="n">ct</span><span class="o">.</span><span class="n">tf</span><span class="p">(</span><span class="n">num</span><span class="p">,</span> <span class="n">den</span><span class="p">)</span>  <span class="c1"># Defining the controller as a transfer function matrix</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ter</span><span class="o">.</span><span class="n">set_controller</span><span class="p">(</span><span class="n">my_system</span><span class="p">,</span> <span class="n">C</span><span class="p">)</span> <span class="c1"># Uploading the controller</span>
+</pre></div>
+</div>
+</dd></dl>
+
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="set_pid.html" class="btn btn-neutral float-left" title="&lt;no title&gt;" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Leonardo Bermeo.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

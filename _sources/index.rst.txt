@@ -1,15 +1,12 @@
-unthermal: A pocket IoT-enabled thermal laboratory
-==================================================
+IoT-enabled Pocket Laboratories
+===============================
 
 .. toctree::
    :maxdepth: 3
-   :caption: Functions:
+   :caption: Contents:
    
-   get_fomodel_step
-   get_static_model
-   step_closed
-   step_open
-
+   unthermal
+   
 
 
 

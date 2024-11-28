@@ -13,7 +13,7 @@
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns="http://www.w3.org/2000/svg"
    xmlns:svg="http://www.w3.org/2000/svg"
-   xmlns:ns3="http://www.iki.fi/pav/software/textext/">
+   xmlns:ns4="http://www.iki.fi/pav/software/textext/">
   <sodipodi:namedview
      id="namedview1"
      pagecolor="#ffffff"
@@ -27,7 +27,7 @@
      inkscape:cx="196.49635"
      inkscape:cy="318.33446"
      inkscape:window-width="1920"
-     inkscape:window-height="1008"
+     inkscape:window-height="1052"
      inkscape:window-x="0"
      inkscape:window-y="0"
      inkscape:window-maximized="1"
@@ -365,17 +365,17 @@
      inkscape:label="1">
     <g
        transform="matrix(3.7725,0,0,3.7725,772.361,46.2001)"
-       ns3:version="1.10.2"
-       ns3:texconverter="pdflatex"
-       ns3:pdfconverter="inkscape"
-       ns3:text="$y_{b,e}$"
-       ns3:preamble="/usr/share/inkscape/extensions/textext/default_packages.tex"
-       ns3:scale="2.829382500731769"
-       ns3:alignment="middle center"
-       ns3:stroke-to-path="0"
-       ns3:inkscapeversion="1.3.2"
+       ns4:version="1.10.2"
+       ns4:texconverter="pdflatex"
+       ns4:pdfconverter="inkscape"
+       ns4:text="$y_{b,e}$"
+       ns4:preamble="/usr/share/inkscape/extensions/textext/default_packages.tex"
+       ns4:scale="2.829382500731769"
+       ns4:alignment="middle center"
+       ns4:stroke-to-path="0"
+       ns4:inkscapeversion="1.3.2"
        id="g87"
-       ns3:jacobian_sqrt="3.7725"
+       ns4:jacobian_sqrt="3.7725"
        style="fill:#005544;stroke-width:0">
       <defs
          id="id-25e8e6f3-a39e-4ef5-9195-aafa740181f8"
@@ -553,17 +553,17 @@
        sodipodi:nodetypes="cssssc" />
     <g
        transform="matrix(1.99548 0 0 1.99548 289.283 339.647)"
-       ns3:version="1.10.2"
-       ns3:texconverter="pdflatex"
-       ns3:pdfconverter="inkscape"
-       ns3:text="$y_{i,ss}$"
-       ns3:preamble="/usr/share/inkscape/extensions/textext/default_packages.tex"
-       ns3:scale="1.4966123326253962"
-       ns3:alignment="middle center"
-       ns3:stroke-to-path="0"
-       ns3:inkscapeversion="1.3.2"
+       ns4:version="1.10.2"
+       ns4:texconverter="pdflatex"
+       ns4:pdfconverter="inkscape"
+       ns4:text="$y_{i,ss}$"
+       ns4:preamble="/usr/share/inkscape/extensions/textext/default_packages.tex"
+       ns4:scale="1.4966123326253962"
+       ns4:alignment="middle center"
+       ns4:stroke-to-path="0"
+       ns4:inkscapeversion="1.3.2"
        id="g7326"
-       ns3:jacobian_sqrt="1.99548">
+       ns4:jacobian_sqrt="1.99548">
       <defs
          id="id-903945a4-45c0-4967-b8d2-0c08a170e9b8">
         <g
@@ -644,17 +644,17 @@
     </g>
     <g
        transform="matrix(1.99548 0 0 1.99548 287.185 436.426)"
-       ns3:version="1.10.2"
-       ns3:texconverter="pdflatex"
-       ns3:pdfconverter="inkscape"
-       ns3:text="$u_{i,ss}$"
-       ns3:preamble="/usr/share/inkscape/extensions/textext/default_packages.tex"
-       ns3:scale="1.496612313758302"
-       ns3:alignment="middle center"
-       ns3:stroke-to-path="0"
-       ns3:inkscapeversion="1.3.2"
+       ns4:version="1.10.2"
+       ns4:texconverter="pdflatex"
+       ns4:pdfconverter="inkscape"
+       ns4:text="$u_{i,ss}$"
+       ns4:preamble="/usr/share/inkscape/extensions/textext/default_packages.tex"
+       ns4:scale="1.496612313758302"
+       ns4:alignment="middle center"
+       ns4:stroke-to-path="0"
+       ns4:inkscapeversion="1.3.2"
        id="g140"
-       ns3:jacobian_sqrt="1.99548">
+       ns4:jacobian_sqrt="1.99548">
       <defs
          id="id-cb06fced-5399-44f1-b02b-66741b384d3f">
         <g
@@ -735,17 +735,17 @@
     </g>
     <g
        transform="matrix(1.99548 0 0 1.99548 281.502 107.874)"
-       ns3:version="1.10.2"
-       ns3:texconverter="pdflatex"
-       ns3:pdfconverter="inkscape"
-       ns3:text="$y_{j,ss}$"
-       ns3:preamble="/usr/share/inkscape/extensions/textext/default_packages.tex"
-       ns3:scale="1.4966123326253962"
-       ns3:alignment="middle center"
-       ns3:stroke-to-path="0"
-       ns3:inkscapeversion="1.3.2"
+       ns4:version="1.10.2"
+       ns4:texconverter="pdflatex"
+       ns4:pdfconverter="inkscape"
+       ns4:text="$y_{j,ss}$"
+       ns4:preamble="/usr/share/inkscape/extensions/textext/default_packages.tex"
+       ns4:scale="1.4966123326253962"
+       ns4:alignment="middle center"
+       ns4:stroke-to-path="0"
+       ns4:inkscapeversion="1.3.2"
        id="g159"
-       ns3:jacobian_sqrt="1.99548">
+       ns4:jacobian_sqrt="1.99548">
       <defs
          id="id-c5b3210d-4c22-40f9-9f62-b54f9484a533">
         <g
@@ -832,17 +832,17 @@
     </g>
     <g
        transform="matrix(1.99548 0 0 1.99548 279.404 204.653)"
-       ns3:version="1.10.2"
-       ns3:texconverter="pdflatex"
-       ns3:pdfconverter="inkscape"
-       ns3:text="$u_{j,ss}$"
-       ns3:preamble="/usr/share/inkscape/extensions/textext/default_packages.tex"
-       ns3:scale="1.496612313758302"
-       ns3:alignment="middle center"
-       ns3:stroke-to-path="0"
-       ns3:inkscapeversion="1.3.2"
+       ns4:version="1.10.2"
+       ns4:texconverter="pdflatex"
+       ns4:pdfconverter="inkscape"
+       ns4:text="$u_{j,ss}$"
+       ns4:preamble="/usr/share/inkscape/extensions/textext/default_packages.tex"
+       ns4:scale="1.496612313758302"
+       ns4:alignment="middle center"
+       ns4:stroke-to-path="0"
+       ns4:inkscapeversion="1.3.2"
        id="g171"
-       ns3:jacobian_sqrt="1.99548">
+       ns4:jacobian_sqrt="1.99548">
       <defs
          id="id-505e012d-6b9a-41da-94a7-948663e4d9e6">
         <g
@@ -979,7 +979,7 @@
          id="tspan177"
          x="-302.76535"
          y="387.14484"
-         style="stroke-width:6.63692">Steady state teperature</tspan></text>
+         style="stroke-width:6.63692">Steady state temperature</tspan></text>
     <ellipse
        style="fill:#000000;stroke:none;stroke-width:2.64567;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:0.5;stroke-dasharray:none;stroke-dashoffset:0;paint-order:fill markers stroke"
        id="ellipse177"
@@ -1000,17 +1000,17 @@
        inkscape:transform-center-y="55.724204" />
     <g
        transform="matrix(1.99548,0,0,1.99548,561.32292,288.16597)"
-       ns3:version="1.10.2"
-       ns3:texconverter="pdflatex"
-       ns3:pdfconverter="inkscape"
-       ns3:text="$(u_{j,ss},y_{j,ss})$"
-       ns3:preamble="/usr/share/inkscape/extensions/textext/default_packages.tex"
-       ns3:scale="1.4966123326253962"
-       ns3:alignment="middle center"
-       ns3:stroke-to-path="0"
-       ns3:inkscapeversion="1.3.2"
+       ns4:version="1.10.2"
+       ns4:texconverter="pdflatex"
+       ns4:pdfconverter="inkscape"
+       ns4:text="$(u_{j,ss},y_{j,ss})$"
+       ns4:preamble="/usr/share/inkscape/extensions/textext/default_packages.tex"
+       ns4:scale="1.4966123326253962"
+       ns4:alignment="middle center"
+       ns4:stroke-to-path="0"
+       ns4:inkscapeversion="1.3.2"
        id="g191"
-       ns3:jacobian_sqrt="1.99548">
+       ns4:jacobian_sqrt="1.99548">
       <defs
          id="id-1d8907d2-5848-4453-aac3-361c65eda399">
         <g
@@ -1213,17 +1213,17 @@
     </g>
     <g
        transform="matrix(1.99548,0,0,1.99548,506.50215,333.70228)"
-       ns3:version="1.10.2"
-       ns3:texconverter="pdflatex"
-       ns3:pdfconverter="inkscape"
-       ns3:text="$(u_{i,ss},y_{i,ss})$"
-       ns3:preamble="/usr/share/inkscape/extensions/textext/default_packages.tex"
-       ns3:scale="1.4966123326253962"
-       ns3:alignment="middle center"
-       ns3:stroke-to-path="0"
-       ns3:inkscapeversion="1.3.2"
+       ns4:version="1.10.2"
+       ns4:texconverter="pdflatex"
+       ns4:pdfconverter="inkscape"
+       ns4:text="$(u_{i,ss},y_{i,ss})$"
+       ns4:preamble="/usr/share/inkscape/extensions/textext/default_packages.tex"
+       ns4:scale="1.4966123326253962"
+       ns4:alignment="middle center"
+       ns4:stroke-to-path="0"
+       ns4:inkscapeversion="1.3.2"
        id="g224"
-       ns3:jacobian_sqrt="1.99548">
+       ns4:jacobian_sqrt="1.99548">
       <defs
          id="id-fca070ed-7c7c-4897-ac80-a16601ea2622">
         <g
