@@ -87,13 +87,17 @@
 <span class="sig-name descname"><span class="pre">get_models_prbs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">system</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">yop</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">amplitude</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">usefile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#unthermal.identsys.get_models_prbs" title="Link to this definition"></a></dt>
 <dd><p>Identifies and compares First-Order (FO) and First-Order with Time Delay (FOTD) models
 of a thermal system using a Pseudo-Random Binary Sequence (PRBS) input signal.</p>
-<p>Models:
-- The FO model is defined as: <span class="math notranslate nohighlight">\(G_1(s) = \dfrac{\alpha}{\tau\, s + 1}\)</span>.
-- The FOTD model is defined as: <span class="math notranslate nohighlight">\(G_2(s) = \dfrac{\alpha}{\tau\, s + 1} e^{-Ls}\)</span>.</p>
+<ul class="simple">
+<li><p>The FO model has the form: <span class="math notranslate nohighlight">\(G_1(s) = \dfrac{\alpha}{\tau\, s + 1}\)</span>.</p></li>
+<li><p>The FOTD model has the form: <span class="math notranslate nohighlight">\(G_2(s) = \dfrac{\alpha}{\tau\, s + 1} e^{-Ls}\)</span>.</p></li>
+</ul>
 <p>This function conducts an open-loop experiment by applying a PRBS signal.
 Prior to applying the signal, the operating point is stabilized using a pre-tuned
 PI controller. The identified FO and FOTD models are obtained through optimization
 and compared against experimental data.</p>
+<p>The following figure depicts a typical experiment using a PRBS input:</p>
+<a class="reference internal image-reference" href="_images/prbs_response.png"><img alt="Closed-loop response of the thermal system" class="align-center" src="_images/prbs_response.png" style="width: 600px;" />
+</a>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -113,18 +117,18 @@ and compared against experimental data.</p>
 </dd>
 </dl>
 <p class="rubric">Notes</p>
-<ul class="simple">
-<li><dl class="simple">
-<dt>Experimental data and identified model parameters are saved as CSV files:</dt><dd><ul>
+<ul>
+<li><p>Experimental data and identified model parameters are saved as CSV files:</p>
+<blockquote>
+<div><ul class="simple">
 <li><p>FO model: <cite>Thermal_fo_model_pbrs.csv</cite></p></li>
 <li><p>FOTD model: <cite>Thermal_fotd_model_pbrs.csv</cite></p></li>
 </ul>
-</dd>
-</dl>
+</div></blockquote>
 </li>
-<li><p>Visualization includes plots of experimental data and the step responses of the FO and FOTD models.</p></li>
+<li><p>Visualization includes plots of experimental data and the step responses of the FO and FOTD models.
+Performance metrics such as FIT scores are also displayed.</p></li>
 </ul>
-<p>Performance metrics such as FIT scores are also displayed.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Raises<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -140,7 +144,7 @@ and compared against experimental data.</p>
 </pre></div>
 </div>
 <p>Now, to identify models using a PRBS signal:</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">G1</span><span class="p">,</span> <span class="n">G2</span><span class="p">,</span> <span class="n">tau</span> <span class="o">=</span> <span class="n">get_models_prbs</span><span class="p">(</span><span class="n">system</span><span class="o">=</span><span class="n">my_system</span><span class="p">,</span> <span class="n">yop</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span> <span class="n">amplitude</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">usefile</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">G1</span><span class="p">,</span> <span class="n">G2</span><span class="p">,</span> <span class="n">tau</span> <span class="o">=</span> <span class="n">get_models_prbs</span><span class="p">(</span><span class="n">system</span><span class="o">=</span><span class="n">my_system</span><span class="p">,</span> <span class="n">yop</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span> <span class="n">amplitude</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>To use previous experimental data:</p>
