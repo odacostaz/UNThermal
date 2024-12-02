@@ -16,6 +16,7 @@ Open Loop Experiments
    step_open
    get_fomodel_step
    get_static_model
+   get_models_prbs
 
    
 Closed Loop Experiments
