@@ -26,6 +26,7 @@ Closed Loop Experiments
    
 
    step_closed
+   profile_closed
 
 Programming Controllers
 -----------------------

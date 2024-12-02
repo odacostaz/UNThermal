@@ -19,7 +19,7 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="&lt;no title&gt;" href="set_pid.html" />
+    <link rel="next" title="&lt;no title&gt;" href="profile_closed.html" />
     <link rel="prev" title="&lt;no title&gt;" href="get_static_model.html" /> 
 </head>
 
@@ -48,6 +48,7 @@
 <li class="toctree-l1"><a class="reference internal" href="unthermal.html#open-loop-experiments">Open Loop Experiments</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="unthermal.html#closed-loop-experiments">Closed Loop Experiments</a><ul class="current">
 <li class="toctree-l2 current"><a class="current reference internal" href="#"><code class="docutils literal notranslate"><span class="pre">step_closed()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="profile_closed.html"><code class="docutils literal notranslate"><span class="pre">profile_closed()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="unthermal.html#programming-controllers">Programming Controllers</a></li>
@@ -93,10 +94,10 @@ Throughout the experiment, the output temperature, control input, and time are p
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>system</strong> (<em>ThermalSystemIoT</em>) – The IoT thermal system on which the experiment will be conducted.</p></li>
-<li><p><strong>r0</strong> (<em>float</em><em>, </em><em>optional</em>) – Initial setpoint (temperature in degrees Celsius). Default is 40.</p></li>
-<li><p><strong>r1</strong> (<em>float</em><em>, </em><em>optional</em>) – Final setpoint (temperature in degrees Celsius) after the step change. Default is 50.</p></li>
-<li><p><strong>t0</strong> (<em>float</em><em>, </em><em>optional</em>) – Time in seconds to maintain the initial setpoint <cite>r0</cite> before stepping to <cite>r1</cite>. Default is 60.</p></li>
-<li><p><strong>t1</strong> (<em>float</em><em>, </em><em>optional</em>) – Time in seconds to maintain the final setpoint <cite>r1</cite> after the step change. Default is 60.</p></li>
+<li><p><strong>r0</strong> (<em>float</em>) – Initial setpoint (temperature in degrees Celsius). Default is 40.</p></li>
+<li><p><strong>r1</strong> (<em>float</em>) – Final setpoint (temperature in degrees Celsius) after the step change. Default is 50.</p></li>
+<li><p><strong>t0</strong> (<em>float</em>) – Time in seconds to maintain the initial setpoint <cite>r0</cite> before stepping to <cite>r1</cite>. Default is 60.</p></li>
+<li><p><strong>t1</strong> (<em>float</em>) – Time in seconds to maintain the final setpoint <cite>r1</cite> after the step change. Default is 60.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -133,7 +134,7 @@ and control input during the experiment.</p></li>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="get_static_model.html" class="btn btn-neutral float-left" title="&lt;no title&gt;" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="set_pid.html" class="btn btn-neutral float-right" title="&lt;no title&gt;" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="profile_closed.html" class="btn btn-neutral float-right" title="&lt;no title&gt;" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>
