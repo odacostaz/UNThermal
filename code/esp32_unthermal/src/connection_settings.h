@@ -1,5 +1,5 @@
 // MQTT settings
-#define  PLANT_NUMBER  "PC-M-10"                 // set the number of your plant
+#define  PLANT_NUMBER  "PC-T-10"                 // set the number of your plant
 #define  THINGNAME "Motor_" PLANT_NUMBER
 #define  BROKER  "192.168.1.100"         // set your broker address eg."192.168.1.100";
 #define  PORT     1883                  //1883
